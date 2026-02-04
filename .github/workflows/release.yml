@@ -1,0 +1,96 @@
+name: Release Packages
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-snap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Snap
+        uses: snapcore/action-build@v1
+        id: build
+        with:
+          path: packaging/snap
+      - name: Upload Snap
+        uses: actions/upload-artifact@v4
+        with:
+          name: snap-package
+          path: packaging/snap/*.snap
+
+  build-flatpak:
+    runs-on: ubuntu-latest
+    container:
+      image: bilelmoussaoui/flatpak-github-actions:gnome-46
+      options: --privilege
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          flatpak install org.gnome.Sdk//46 org.gnome.Platform//46 -y
+      - name: Build Flatpak
+        uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          bundle: razercontrol.flatpak
+          manifest-path: packaging/flatpak/com.github.encomjp.razercontrol.yml
+          cache-key: flatpak-builder-${{ github.sha }}
+      - name: Upload Flatpak
+        uses: actions/upload-artifact@v4
+        with:
+          name: flatpak-package
+          path: razercontrol.flatpak
+
+  build-rpm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rpm cargo libdbus-1-dev libusb-1.0-0-dev libhidapi-dev libgtk-3-dev pkg-config
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - name: Setup rpmbuild structure
+        run: |
+          mkdir -p ~/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
+          # Create source tarball matching what spec expects (name-version)
+          # Spec expects razercontrol-revived-0.1.0.tar.gz
+          # We'll repackage current directory
+          mkdir -p razercontrol-revived-0.1.0
+          cp -r ./* razercontrol-revived-0.1.0/ 2>/dev/null || :
+          # Exclude the directory itself to avoid recursion if copying indiscriminately
+          tar --exclude='razercontrol-revived-0.1.0' -czf ~/rpmbuild/SOURCES/razercontrol-revived-0.1.0.tar.gz razercontrol-revived-0.1.0
+      - name: Build RPM
+        run: |
+          rpmbuild -bb packaging/fedora/razercontrol.spec
+      - name: Upload RPM
+        uses: actions/upload-artifact@v4
+        with:
+          name: rpm-package
+          path: ~/rpmbuild/RPMS/**/*.rpm
+
+  release:
+    needs: [build-snap, build-flatpak, build-rpm]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Display artifacts
+        run: ls -R artifacts
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            artifacts/snap-package/*.snap
+            artifacts/flatpak-package/*.flatpak
+            artifacts/rpm-package/**/*.rpm
