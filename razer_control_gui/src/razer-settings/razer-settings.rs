@@ -701,10 +701,7 @@ fn make_about_page(device: SupportedDevice) -> SettingsPage {
         let url = LinkButton::with_label(report_bug_url, "Report bug");
     let row = SettingsRow::new(&label, &url);
     settings_section.add_row(&row.master_container);
-        let label = Label::new(Some("Discord"));
-        let url = LinkButton::with_label("https://discord.gg/GdHKf45", "Razer Linux");
-    let row = SettingsRow::new(&label, &url);
-    settings_section.add_row(&row.master_container);
+
 
     // Model section
     let settings_section = page.add_section(Some("Laptop Information"));
