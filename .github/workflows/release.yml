@@ -32,7 +32,7 @@ jobs:
             pkg-config
       
       - name: Install Rust
-        uses: dtolnay/rust-action@stable
+        uses: dtolnay/rust-toolchain@stable
       
       - name: Build
         working-directory: razer_control_gui
