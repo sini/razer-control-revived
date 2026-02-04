@@ -181,11 +181,11 @@ Example device entry:
 This software is provided AS-IS with NO WARRANTY. This is an experimental community project.
 
 - I am NOT affiliated with Razer
-- I am NOT responsible for any damage to your hardware
+- **I am not responsible for potential bricking etc.**
 - No official support is provided - I'll try to help but no guarantees
 - If something breaks, you get to keep both pieces
 
-That said, it works great on my Blade 2025 and gives me more control than Synapse 4 ever did on Windows.
+It worked on my AD AI 365 Razer Blade with 5070Ti and should potentially work on other 16 inch ones from 50xx series nvidia but no warranty.
 
 ## Credits
 

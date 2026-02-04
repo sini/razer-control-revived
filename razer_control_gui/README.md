@@ -90,3 +90,14 @@ Custom power control take two more parameters: cpu boost and gpu boost
 ```
 razer-cli write power ac 4 3 2
 ```
+
+## Warning
+
+This software is provided AS-IS with NO WARRANTY. This is an experimental community project.
+
+- I am NOT affiliated with Razer
+- **I am not responsible for potential bricking etc.**
+- No official support is provided - I'll try to help but no guarantees
+- If something breaks, you get to keep both pieces
+
+It worked on my AD AI 365 Razer Blade with 5070Ti and should potentially work on other 16 inch ones from 50xx series nvidia but no warranty.
