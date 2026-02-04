@@ -4,22 +4,56 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
 
 jobs:
-  build-snap:
-    runs-on: ubuntu-latest
+  build-linux:
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - name: Build Snap
-        uses: snapcore/action-build@v1
-        id: build
-        with:
-          path: packaging/snap
-      - name: Upload Snap
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgtk-4-dev \
+            libadwaita-1-dev \
+            libdbus-1-dev \
+            libhidapi-dev \
+            libusb-1.0-0-dev \
+            libglib2.0-dev \
+            libgraphene-1.0-dev \
+            libpango1.0-dev \
+            libcairo2-dev \
+            libgdk-pixbuf-2.0-dev \
+            pkg-config
+      
+      - name: Install Rust
+        uses: dtolnay/rust-action@stable
+      
+      - name: Build
+        working-directory: razer_control_gui
+        run: cargo build --release
+      
+      - name: Package binaries
+        run: |
+          mkdir -p release-artifacts
+          cp razer_control_gui/target/release/razer-settings release-artifacts/
+          cp razer_control_gui/target/release/razer-cli release-artifacts/
+          cp razer_control_gui/target/release/daemon release-artifacts/razer-daemon
+          cp -r razer_control_gui/data release-artifacts/
+          cp LICENSE release-artifacts/
+          cp README.md release-artifacts/
+          cd release-artifacts && tar -czvf ../razercontrol-linux-x86_64.tar.gz *
+      
+      - name: Upload Linux binaries
         uses: actions/upload-artifact@v4
         with:
-          name: snap-package
-          path: packaging/snap/*.snap
+          name: linux-binaries
+          path: razercontrol-linux-x86_64.tar.gz
 
   build-flatpak:
     runs-on: ubuntu-latest
@@ -28,15 +62,14 @@ jobs:
       options: --privileged
     steps:
       - uses: actions/checkout@v4
-      - name: Install dependencies
-        run: |
-          flatpak install org.gnome.Sdk//47 org.gnome.Platform//47 org.freedesktop.Sdk.Extension.rust-stable//24.08 -y
+      
       - name: Build Flatpak
         uses: flatpak/flatpak-github-actions/flatpak-builder@v6
         with:
           bundle: razercontrol.flatpak
           manifest-path: packaging/flatpak/com.github.encomjp.razercontrol.yml
           cache-key: flatpak-builder-${{ github.sha }}
+      
       - name: Upload Flatpak
         uses: actions/upload-artifact@v4
         with:
@@ -45,48 +78,72 @@ jobs:
 
   build-rpm:
     runs-on: ubuntu-latest
-    container: fedora:latest
+    container: fedora:41
     steps:
       - uses: actions/checkout@v4
+      
       - name: Install dependencies
         run: |
-          dnf install -y rpm-build cargo rust-packaging dbus-devel libusb1-devel hidapi-devel gtk3-devel systemd-devel git
+          dnf install -y \
+            rpm-build \
+            cargo \
+            rust \
+            dbus-devel \
+            libusb1-devel \
+            hidapi-devel \
+            gtk4-devel \
+            libadwaita-devel \
+            glib2-devel \
+            graphene-devel \
+            pango-devel \
+            cairo-devel \
+            gdk-pixbuf2-devel \
+            systemd-devel \
+            git
+      
       - name: Setup rpmbuild structure
         run: |
           mkdir -p ~/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
-          # Create source tarball matching what spec expects (name-version)
-          # Spec expects razercontrol-revived-0.1.0.tar.gz
-          # We'll repackage current directory
-          mkdir -p razercontrol-revived-0.1.0
-          # Copy all files into the directory, ignoring the recursion error
-          cp -r * razercontrol-revived-0.1.0/ || :
-          # Create the tarball including the directory
-          tar -czf ~/rpmbuild/SOURCES/razercontrol-revived-0.1.0.tar.gz razercontrol-revived-0.1.0
+          VERSION=$(grep '^Version:' packaging/fedora/razercontrol.spec | awk '{print $2}')
+          mkdir -p razercontrol-revived-$VERSION
+          cp -r * razercontrol-revived-$VERSION/ 2>/dev/null || true
+          tar -czf ~/rpmbuild/SOURCES/razercontrol-revived-$VERSION.tar.gz razercontrol-revived-$VERSION
+      
       - name: Build RPM
+        run: rpmbuild -bb packaging/fedora/razercontrol.spec
+      
+      - name: Find and copy RPM
         run: |
-          rpmbuild -bb packaging/fedora/razercontrol.spec
+          mkdir -p rpm-output
+          find ~/rpmbuild/RPMS -name "*.rpm" -exec cp {} rpm-output/ \;
+      
       - name: Upload RPM
         uses: actions/upload-artifact@v4
         with:
           name: rpm-package
-          path: ~/rpmbuild/RPMS/**/*.rpm
+          path: rpm-output/*.rpm
 
   release:
-    needs: [build-snap, build-flatpak, build-rpm]
+    needs: [build-linux, build-flatpak, build-rpm]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
+      
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
+      
       - name: Display artifacts
-        run: ls -R artifacts
+        run: find artifacts -type f -ls
+      
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
+          generate_release_notes: true
           files: |
-            artifacts/snap-package/*.snap
+            artifacts/linux-binaries/*.tar.gz
             artifacts/flatpak-package/*.flatpak
-            artifacts/rpm-package/**/*.rpm
+            artifacts/rpm-package/*.rpm
