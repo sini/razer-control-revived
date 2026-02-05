@@ -1,7 +1,8 @@
 # Razer Laptop Control - Revived
 
 [![License: GPL-2.0](https://img.shields.io/badge/License-GPL%202.0-blue.svg)](LICENSE)
-[![Donate](https://img.shields.io/badge/Donate-PayPal-blue.svg)](https://www.paypal.com/donate/?hosted_button_id=H4SCC24R8KS4A)
+[![Release](https://img.shields.io/github/v/release/encomjp/razer-control-revived)](https://github.com/encomjp/razer-control-revived/releases/latest)
+[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/donate/?hosted_button_id=H4SCC24R8KS4A)
 
 A Linux userspace application to control Razer Blade laptops. **No kernel modules (DKMS) required!**
 
@@ -9,9 +10,15 @@ This tool provides more control over your Razer laptop than Synapse does - fan c
 
 > **⚠️ DISCLAIMER:** This is experimental community software. Use at your own risk. No warranty is provided.
 
+## ☕ Support This Project
+
+If you find this project useful, please consider supporting its development:
+
+[![Donate with PayPal](https://img.shields.io/badge/Donate-PayPal-blue.svg?style=for-the-badge&logo=paypal)](https://www.paypal.com/donate/?hosted_button_id=H4SCC24R8KS4A)
+
 ## 📥 Downloads
 
-Pre-compiled binaries are available on the [Releases](https://github.com/encomjp/razercontrol-revived/releases) page:
+**[⬇️ Download Latest Release (v0.2.0)](https://github.com/encomjp/razer-control-revived/releases/tag/0.2.0)**
 
 | Package | Best For | Description |
 |---------|----------|-------------|
