@@ -31,8 +31,8 @@
             hidapi
             systemd
             glib
-            pango
-            gtk3
+            gtk4
+            libadwaita
           ];
 
           src = ./razer_control_gui;
