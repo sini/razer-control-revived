@@ -1,5 +1,14 @@
 # Razer Laptop Control - Revived
 
+<img width="516" height="466" alt="image" src="https://github.com/user-attachments/assets/a0d86ded-168c-49e4-b0af-7ebada86af4e" />
+
+<img width="1059" height="870" alt="image" src="https://github.com/user-attachments/assets/48b10737-76ed-45a0-886b-df5ba6bea30d" />
+
+<img width="1069" height="871" alt="image" src="https://github.com/user-attachments/assets/7de72d59-7323-4933-a742-23c1100d63dd" />
+
+<img width="1068" height="877" alt="image" src="https://github.com/user-attachments/assets/cd1c5f19-02f7-4d1f-a570-4b90771ae6d7" />
+
+
 [![License: GPL-2.0](https://img.shields.io/badge/License-GPL%202.0-blue.svg)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/encomjp/razer-control-revived)](https://github.com/encomjp/razer-control-revived/releases/latest)
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/donate/?hosted_button_id=H4SCC24R8KS4A)
