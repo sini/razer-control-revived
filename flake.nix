@@ -23,9 +23,12 @@
 
         packages.default = pkgs.rustPlatform.buildRustPackage {
           pname = name;
-          version = "0.2.0";
+          version = "0.3.0";
 
-          nativeBuildInputs = with pkgs; [ pkg-config ];
+          nativeBuildInputs = with pkgs; [
+            pkg-config
+            wrapGAppsHook4
+          ];
           buildInputs = with pkgs; [
             dbus.dev
             hidapi
@@ -38,33 +41,16 @@
           src = ./razer_control_gui;
 
           postConfigure = ''
-            substituteInPlace src/device.rs --replace '/usr/share/razercontrol/laptops.json' '${./razer_control_gui/data/devices/laptops.json}'
+            substituteInPlace src/device.rs --replace-fail '/usr/share/razercontrol/laptops.json' '${./razer_control_gui/data/devices/laptops.json}'
           '';
-
-          postBuild =
-            let
-              app = "razer-settings";
-              path = "$out/share/applications/${app}.desktop";
-            in
-            ''
-              # Install .desktop file
-              mkdir -p $out/share/applications
-              cat > ${path} <<EOF
-              [Desktop Entry]
-              Name=Razer Settings
-              Exec=$out/bin/${app}
-              Type=Application
-              Categories=Utility;
-              EOF
-              chmod +x ${path}
-            '';
 
           postInstall = ''
             mkdir -p $out/lib/udev/rules.d
             mkdir -p $out/libexec
+            mkdir -p $out/share/applications
             mv $out/bin/daemon $out/libexec
             cp ${./razer_control_gui/data/udev/99-hidraw-permissions.rules} $out/lib/udev/rules.d/99-hidraw-permissions.rules
-
+            cp ${./razer_control_gui/data/gui/razer-settings.desktop} $out/share/applications/razer-settings.desktop
           '';
 
           cargoLock = {
