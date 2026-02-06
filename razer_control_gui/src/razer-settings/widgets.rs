@@ -97,50 +97,24 @@ impl SliderRow {
     }
 }
 
-/// A row with a switch on the right side
-pub struct SwitchRow {
-    pub row: adw::ActionRow,
-    pub switch: gtk::Switch,
+/// Helper to create an adw::ComboRow with a StringList model
+pub fn make_combo_row(title: &str, subtitle: &str, options: &[&str], active: u32) -> adw::ComboRow {
+    let row = adw::ComboRow::new();
+    row.set_title(title);
+    row.set_subtitle(subtitle);
+    let model = gtk::StringList::new(options);
+    row.set_model(Some(&model));
+    row.set_selected(active);
+    row
 }
 
-impl SwitchRow {
-    pub fn new(title: &str, subtitle: &str, active: bool) -> Self {
-        let row = adw::ActionRow::new();
-        row.set_title(title);
-        row.set_subtitle(subtitle);
-        
-        let switch = gtk::Switch::new();
-        switch.set_active(active);
-        switch.set_valign(gtk::Align::Center);
-        row.add_suffix(&switch);
-        row.set_activatable_widget(Some(&switch));
-        
-        SwitchRow { row, switch }
-    }
-}
-
-/// A row with a combo box on the right side  
-pub struct ComboRow {
-    pub row: adw::ActionRow,
-    pub combo: gtk::ComboBoxText,
-}
-
-impl ComboRow {
-    pub fn new(title: &str, subtitle: &str, options: &[&str], active: u32) -> Self {
-        let row = adw::ActionRow::new();
-        row.set_title(title);
-        row.set_subtitle(subtitle);
-        
-        let combo = gtk::ComboBoxText::new();
-        for opt in options {
-            combo.append_text(opt);
-        }
-        combo.set_active(Some(active));
-        combo.set_valign(gtk::Align::Center);
-        row.add_suffix(&combo);
-        
-        ComboRow { row, combo }
-    }
+/// Helper to create an adw::SwitchRow
+pub fn make_switch_row(title: &str, subtitle: &str, active: bool) -> adw::SwitchRow {
+    let row = adw::SwitchRow::new();
+    row.set_title(title);
+    row.set_subtitle(subtitle);
+    row.set_active(active);
+    row
 }
 
 /// A row with a color button

@@ -555,41 +555,27 @@ fn create_status_bar() -> gtk::Box {
     top_row.append(&spacer1);
     top_row.append(&power_box);
     
-    // Bottom row: GPU stats
+    // Bottom row: GPU stats (combined per-GPU to avoid ambiguous labels)
     let bottom_row = gtk::Box::new(gtk::Orientation::Horizontal, 16);
-    
-    // iGPU Power
-    let igpu_power_box = gtk::Box::new(gtk::Orientation::Horizontal, 4);
-    let igpu_power_label = gtk::Label::new(Some("iGPU: --W"));
-    igpu_power_label.add_css_class("caption");
-    igpu_power_box.append(&igpu_power_label);
-    
-    // iGPU Utilization
-    let igpu_util_box = gtk::Box::new(gtk::Orientation::Horizontal, 4);
-    let igpu_util_label = gtk::Label::new(Some("iGPU: --%"));
-    igpu_util_label.add_css_class("caption");
-    igpu_util_box.append(&igpu_util_label);
-    
-    // dGPU Power
-    let dgpu_power_box = gtk::Box::new(gtk::Orientation::Horizontal, 4);
-    let dgpu_power_label = gtk::Label::new(Some("dGPU: --W"));
-    dgpu_power_label.add_css_class("caption");
-    dgpu_power_box.append(&dgpu_power_label);
-    
-    // dGPU Utilization
-    let dgpu_util_box = gtk::Box::new(gtk::Orientation::Horizontal, 4);
-    let dgpu_util_label = gtk::Label::new(Some("dGPU: --%"));
-    dgpu_util_label.add_css_class("caption");
-    dgpu_util_box.append(&dgpu_util_label);
-    
+
+    // iGPU stats (power + utilization combined)
+    let igpu_stats_box = gtk::Box::new(gtk::Orientation::Horizontal, 4);
+    let igpu_stats_label = gtk::Label::new(Some("iGPU: --"));
+    igpu_stats_label.add_css_class("caption");
+    igpu_stats_box.append(&igpu_stats_label);
+
+    // dGPU stats (power + utilization combined)
+    let dgpu_stats_box = gtk::Box::new(gtk::Orientation::Horizontal, 4);
+    let dgpu_stats_label = gtk::Label::new(Some("dGPU: --"));
+    dgpu_stats_label.add_css_class("caption");
+    dgpu_stats_box.append(&dgpu_stats_label);
+
     // Spacer for bottom row
     let spacer2 = gtk::Box::new(gtk::Orientation::Horizontal, 0);
     spacer2.set_hexpand(true);
-    
-    bottom_row.append(&igpu_power_box);
-    bottom_row.append(&igpu_util_box);
-    bottom_row.append(&dgpu_power_box);
-    bottom_row.append(&dgpu_util_box);
+
+    bottom_row.append(&igpu_stats_box);
+    bottom_row.append(&dgpu_stats_box);
     bottom_row.append(&spacer2);
     
     main_box.append(&top_row);
@@ -602,10 +588,8 @@ fn create_status_bar() -> gtk::Box {
     let fan_label_ref = fan_label.clone();
     let power_label_ref = power_label.clone();
     let power_icon_ref = power_icon.clone();
-    let igpu_power_label_ref = igpu_power_label.clone();
-    let igpu_util_label_ref = igpu_util_label.clone();
-    let dgpu_power_label_ref = dgpu_power_label.clone();
-    let dgpu_util_label_ref = dgpu_util_label.clone();
+    let igpu_stats_label_ref = igpu_stats_label.clone();
+    let dgpu_stats_label_ref = dgpu_stats_label.clone();
     
     glib::timeout_add_local(Duration::from_secs(2), move || {
         // Update CPU temp
@@ -634,28 +618,24 @@ fn create_status_bar() -> gtk::Box {
             None => fan_label_ref.set_text("Fan: N/A"),
         }
         
-        // Update iGPU power
-        match get_igpu_power() {
-            Some(power) => igpu_power_label_ref.set_text(&format!("iGPU: {:.1}W", power)),
-            None => igpu_power_label_ref.set_text("iGPU: N/A"),
+        // Update iGPU stats (combined power + utilization)
+        let igpu_power = get_igpu_power();
+        let igpu_util = get_igpu_utilization();
+        match (igpu_power, igpu_util) {
+            (Some(p), Some(u)) => igpu_stats_label_ref.set_text(&format!("iGPU: {:.1}W \u{00B7} {}%", p, u)),
+            (Some(p), None) => igpu_stats_label_ref.set_text(&format!("iGPU: {:.1}W", p)),
+            (None, Some(u)) => igpu_stats_label_ref.set_text(&format!("iGPU: {}%", u)),
+            (None, None) => igpu_stats_label_ref.set_text("iGPU: N/A"),
         }
-        
-        // Update iGPU utilization
-        match get_igpu_utilization() {
-            Some(util) => igpu_util_label_ref.set_text(&format!("iGPU: {}%", util)),
-            None => igpu_util_label_ref.set_text("iGPU: N/A"),
-        }
-        
-        // Update dGPU power
-        match get_dgpu_power() {
-            Some(power) => dgpu_power_label_ref.set_text(&format!("dGPU: {:.1}W", power)),
-            None => dgpu_power_label_ref.set_text("dGPU: Off"),
-        }
-        
-        // Update dGPU utilization
-        match get_dgpu_utilization() {
-            Some(util) => dgpu_util_label_ref.set_text(&format!("dGPU: {}%", util)),
-            None => dgpu_util_label_ref.set_text("dGPU: Off"),
+
+        // Update dGPU stats (combined power + utilization)
+        let dgpu_power = get_dgpu_power();
+        let dgpu_util = get_dgpu_utilization();
+        match (dgpu_power, dgpu_util) {
+            (Some(p), Some(u)) => dgpu_stats_label_ref.set_text(&format!("dGPU: {:.1}W \u{00B7} {}%", p, u)),
+            (Some(p), None) => dgpu_stats_label_ref.set_text(&format!("dGPU: {:.1}W", p)),
+            (None, Some(u)) => dgpu_stats_label_ref.set_text(&format!("dGPU: {}%", u)),
+            (None, None) => dgpu_stats_label_ref.set_text("dGPU: Off"),
         }
         
         // Update power status
@@ -696,66 +676,32 @@ fn check_first_run() -> bool {
 }
 
 fn show_first_run_donation_dialog(window: &adw::ApplicationWindow) {
-    let dialog = gtk::Dialog::builder()
-        .title("Support Development")
-        .transient_for(window)
-        .modal(true)
-        .default_width(380)
-        .resizable(false)
+    let dialog = adw::AlertDialog::builder()
+        .heading("Support Development")
+        .body(
+            "Hi! Thank you for using Razer Control.\n\n\
+            I develop this application in my free time to support the Linux community. \
+            If it helps you, please consider making a small donation.\n\n\
+            Your support helps me acquire more Razer devices for testing and verification, \
+            making the experience better for everyone!"
+        )
         .build();
-    
-    let content_area = dialog.content_area();
-    content_area.set_spacing(16);
-    content_area.set_margin_top(32);
-    content_area.set_margin_bottom(32);
-    content_area.set_margin_start(32);
-    content_area.set_margin_end(32);
-    content_area.set_halign(gtk::Align::Center);
 
-    // Heart Icon
-    let icon = gtk::Image::builder()
-        .icon_name("emblem-favorite-symbolic")
-        .pixel_size(64)
-        .css_classes(vec!["accent".to_string()])
-        .margin_bottom(8)
-        .build();
-    content_area.append(&icon);
-    
-    let title = gtk::Label::new(Some("Support Development"));
-    title.add_css_class("title-1");
-    content_area.append(&title);
-    
-    let message = gtk::Label::new(Some(
-        "Hi! Thank you for using Razer Control.\n\n\
-        I develop this application in my free time to support the Linux community. \
-        If it helps you, please consider making a small donation.\n\n\
-        Your support helps me acquire more Razer devices for testing and verification, \
-        making the experience better for everyone!"
-    ));
-    message.set_wrap(true);
-    message.set_justify(gtk::Justification::Center);
-    message.set_max_width_chars(35);
-    // Use dim-label class for slightly softer text
-    message.add_css_class("dim-label");
-    content_area.append(&message);
-    
-    dialog.add_button("Maybe Later", gtk::ResponseType::Cancel);
-    let btn_donate = dialog.add_button("Donate ❤️", gtk::ResponseType::Accept);
-    btn_donate.add_css_class("suggested-action");
-    btn_donate.add_css_class("pill");
-    
-    dialog.connect_response(move |dialog: &gtk::Dialog, response_id: gtk::ResponseType| {
-        if response_id == gtk::ResponseType::Accept {
-            // Open PayPal link
-            let url = "https://www.paypal.com/donate/?hosted_button_id=H4SCC24R8KS4A";
+    dialog.add_response("later", "Maybe Later");
+    dialog.add_response("donate", "Donate \u{2764}\u{FE0F}");
+    dialog.set_response_appearance("donate", adw::ResponseAppearance::Suggested);
+    dialog.set_default_response(Some("donate"));
+    dialog.set_close_response("later");
+
+    dialog.connect_response(None, |_, response| {
+        if response == "donate" {
             let _ = std::process::Command::new("xdg-open")
-                .arg(url)
+                .arg("https://www.paypal.com/donate/?hosted_button_id=H4SCC24R8KS4A")
                 .spawn();
         }
-        dialog.close();
     });
-    
-    dialog.present();
+
+    dialog.present(Some(window));
 }
 
 
@@ -769,6 +715,19 @@ fn main() {
 
     app.connect_startup(|_| {
         adw::init().ok();
+
+        // Force dark color scheme for Razer branding
+        let style_manager = adw::StyleManager::default();
+        style_manager.set_color_scheme(adw::ColorScheme::ForceDark);
+
+        // Load custom CSS for Razer green accent
+        let provider = gtk::CssProvider::new();
+        provider.load_from_string(include_str!("../style.css"));
+        gtk::style_context_add_provider_for_display(
+            &gtk::gdk::Display::default().expect("Could not connect to a display"),
+            &provider,
+            gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+        );
     });
 
     app.connect_activate(move |app| {
@@ -844,7 +803,9 @@ fn main() {
             _ => {}
         }
         
-        // Status bar at bottom
+        // Separator + status bar at bottom
+        let separator = gtk::Separator::new(gtk::Orientation::Horizontal);
+        content_box.append(&separator);
         let status_bar = create_status_bar();
         content_box.append(&status_bar);
         
@@ -874,31 +835,31 @@ fn make_page(ac: bool, device: SupportedDevice) -> SettingsPage {
     if device.has_logo() {
         let logo = get_logo(ac).unwrap_or(1);
         let section = settings_page.add_section(Some("Logo Control"));
-        
-        let combo = ComboRow::new(
+
+        let logo_combo = make_combo_row(
             "Logo Mode",
             "Control your Razer logo lighting",
             &["Off", "On", "Breathing"],
             logo as u32
         );
-        combo.combo.connect_changed(move |c| {
-            let logo = c.active().unwrap_or(0) as u8;
+        logo_combo.connect_selected_notify(move |c| {
+            let logo = c.selected() as u8;
             set_logo(ac, logo);
         });
-        section.add_row(&combo.row);
+        section.add_row(&logo_combo);
     }
 
     // Power Management Section
     if let Some(power) = power {
         let section = settings_page.add_section(Some("Performance Profile"));
-        
-        let power_combo = ComboRow::new(
+
+        let power_combo = make_combo_row(
             "Power Profile",
             "Select your performance mode",
             &["Balanced", "Gaming", "Creator", "Silent", "Custom"],
             power.0 as u32
         );
-        section.add_row(&power_combo.row);
+        section.add_row(&power_combo);
 
         // CPU Boost Control
         let cpu_options = if device.can_boost() {
@@ -906,64 +867,55 @@ fn make_page(ac: bool, device: SupportedDevice) -> SettingsPage {
         } else {
             vec!["Low", "Medium", "High"]
         };
-        let cpu_combo = ComboRow::new(
+        let cpu_combo = make_combo_row(
             "CPU Performance",
             "Adjust processor performance level",
             &cpu_options.iter().map(|s| *s).collect::<Vec<_>>(),
             power.1 as u32
         );
-        section.add_row(&cpu_combo.row);
+        section.add_row(&cpu_combo);
 
         // GPU Boost Control
-        let gpu_combo = ComboRow::new(
+        let gpu_combo = make_combo_row(
             "GPU Performance",
             "Adjust graphics performance level",
             &["Low", "Medium", "High"],
             power.2 as u32
         );
-        section.add_row(&gpu_combo.row);
+        section.add_row(&gpu_combo);
 
         // Set visibility based on custom mode
         let show_boost = power.0 == 4;
-        cpu_combo.row.set_visible(show_boost);
-        gpu_combo.row.set_visible(show_boost);
+        cpu_combo.set_visible(show_boost);
+        gpu_combo.set_visible(show_boost);
 
         // Connect power profile changes
-        let cpu_row_ref = cpu_combo.row.clone();
-        let gpu_row_ref = gpu_combo.row.clone();
-        let cpu_combo_ref = cpu_combo.combo.clone();
-        let gpu_combo_ref = gpu_combo.combo.clone();
-        
-        power_combo.combo.connect_changed(glib::clone!(
-            @weak cpu_combo_ref, @weak gpu_combo_ref, @weak cpu_row_ref, @weak gpu_row_ref => move |pp| {
-                let profile = pp.active().unwrap_or(0) as u8;
-                let cpu = cpu_combo_ref.active().unwrap_or(0) as u8;
-                let gpu = gpu_combo_ref.active().unwrap_or(0) as u8;
+        power_combo.connect_selected_notify(glib::clone!(
+            @weak cpu_combo, @weak gpu_combo => move |pp| {
+                let profile = pp.selected() as u8;
+                let cpu = cpu_combo.selected() as u8;
+                let gpu = gpu_combo.selected() as u8;
                 set_power(ac, (profile, cpu, gpu));
                 let show = profile == 4;
-                cpu_row_ref.set_visible(show);
-                gpu_row_ref.set_visible(show);
+                cpu_combo.set_visible(show);
+                gpu_combo.set_visible(show);
             }
         ));
-        
-        let power_combo_ref = power_combo.combo.clone();
-        let gpu_combo_ref2 = gpu_combo.combo.clone();
-        cpu_combo.combo.connect_changed(glib::clone!(
-            @weak power_combo_ref, @weak gpu_combo_ref2 => move |cb| {
-                let profile = power_combo_ref.active().unwrap_or(0) as u8;
-                let cpu = cb.active().unwrap_or(0) as u8;
-                let gpu = gpu_combo_ref2.active().unwrap_or(0) as u8;
+
+        cpu_combo.connect_selected_notify(glib::clone!(
+            @weak power_combo, @weak gpu_combo => move |cb| {
+                let profile = power_combo.selected() as u8;
+                let cpu = cb.selected() as u8;
+                let gpu = gpu_combo.selected() as u8;
                 set_power(ac, (profile, cpu, gpu));
             }
         ));
-        
-        let power_combo_ref2 = power_combo.combo.clone();
-        let cpu_combo_ref2 = cpu_combo.combo.clone();
-        gpu_combo.combo.connect_changed(glib::clone!(
-            @weak power_combo_ref2, @weak cpu_combo_ref2 => move |gb| {
-                let profile = power_combo_ref2.active().unwrap_or(0) as u8;
-                let cpu = cpu_combo_ref2.active().unwrap_or(0) as u8;
-                let gpu = gb.active().unwrap_or(0) as u8;
+
+        gpu_combo.connect_selected_notify(glib::clone!(
+            @weak power_combo, @weak cpu_combo => move |gb| {
+                let profile = power_combo.selected() as u8;
+                let cpu = cpu_combo.selected() as u8;
+                let gpu = gb.selected() as u8;
                 set_power(ac, (profile, cpu, gpu));
             }
         ));
@@ -973,12 +925,12 @@ fn make_page(ac: bool, device: SupportedDevice) -> SettingsPage {
     let section = settings_page.add_section(Some("Cooling Control"));
     
     let auto = fan_speed == 0;
-    let fan_switch = SwitchRow::new(
+    let fan_switch = make_switch_row(
         "Automatic Fan Control",
         "Let the system manage fan speed",
         auto
     );
-    section.add_row(&fan_switch.row);
+    section.add_row(&fan_switch);
 
     // Fan speed slider
     let fan_slider = SliderRow::new(
@@ -993,15 +945,16 @@ fn make_page(ac: bool, device: SupportedDevice) -> SettingsPage {
     section.add_row(&fan_slider.container);
 
     // Fan control logic
-    let switch_ref = fan_switch.switch.clone();
-    fan_slider.scale.connect_value_changed(glib::clone!(@weak switch_ref => move |sc| {
+    let fan_switch_ref = fan_switch.clone();
+    fan_slider.scale.connect_value_changed(move |sc| {
         let value = sc.value();
         set_fan_speed(ac, value as i32);
-        switch_ref.set_active(false);
-    }));
-    
+        fan_switch_ref.set_active(false);
+    });
+
     let scale_ref = fan_slider.scale.clone();
-    fan_switch.switch.connect_state_set(glib::clone!(@weak scale_ref => @default-return glib::Propagation::Proceed, move |_sw, state| {
+    fan_switch.connect_active_notify(glib::clone!(@weak scale_ref => move |sw| {
+        let state = sw.is_active();
         if state {
             set_fan_speed(ac, 0);
         } else {
@@ -1009,7 +962,6 @@ fn make_page(ac: bool, device: SupportedDevice) -> SettingsPage {
             scale_ref.set_value(min_fan_speed);
         }
         scale_ref.set_sensitive(!state);
-        glib::Propagation::Proceed
     }));
 
     // Keyboard Brightness Section
@@ -1039,14 +991,14 @@ fn make_general_page() -> SettingsPage {
 
     // Keyboard Effects Section
     let section = page.add_section(Some("Keyboard Effects"));
-    
-    let effect_combo = ComboRow::new(
+
+    let effect_combo = make_combo_row(
         "Effect Type",
         "Choose your keyboard lighting effect",
         &["Static", "Static Gradient", "Wave Gradient", "Breathing"],
         0
     );
-    section.add_row(&effect_combo.row);
+    section.add_row(&effect_combo);
 
     let color1 = ColorRow::new("Primary Color", "Select the main color");
     section.add_row(&color1.row);
@@ -1061,14 +1013,14 @@ fn make_general_page() -> SettingsPage {
     button_box.set_margin_start(12);
     button_box.set_margin_end(12);
     button_box.set_halign(gtk::Align::End);
-    
+
     let button = gtk::Button::with_label("Apply Effect");
     button.add_css_class("suggested-action");
     button.set_margin_start(8);
     button_box.append(&button);
     section.add_row(&button_box);
-    
-    let effect_ref = effect_combo.combo.clone();
+
+    let effect_ref = effect_combo.clone();
     let color1_ref = color1.button.clone();
     let color2_ref = color2.button.clone();
     button.connect_clicked(move |_| {
@@ -1081,8 +1033,8 @@ fn make_general_page() -> SettingsPage {
         let red2 = (c2.red() * 255.0) as u8;
         let green2 = (c2.green() * 255.0) as u8;
         let blue2 = (c2.blue() * 255.0) as u8;
-        
-        let effect = effect_ref.active().unwrap_or(0);
+
+        let effect = effect_ref.selected();
         match effect {
             0 => { set_effect("static", vec![red, green, blue]); },
             1 => { set_effect("static_gradient", vec![red, green, blue, red2, green2, blue2]); },
@@ -1095,13 +1047,13 @@ fn make_general_page() -> SettingsPage {
     // Battery Health Optimizer Section
     if let Some(bho) = bho {
         let section = page.add_section(Some("Battery Health Optimizer"));
-        
-        let bho_switch = SwitchRow::new(
+
+        let bho_switch = make_switch_row(
             "Enable Battery Health Mode",
             "Limits charging to extend battery lifespan",
             bho.0
         );
-        section.add_row(&bho_switch.row);
+        section.add_row(&bho_switch);
 
         let bho_slider = SliderRow::new(
             "Charge Limit",
@@ -1116,19 +1068,19 @@ fn make_general_page() -> SettingsPage {
         section.add_row(&bho_slider.container);
 
         // BHO Logic
-        let switch_ref = bho_switch.switch.clone();
-        bho_slider.scale.connect_value_changed(glib::clone!(@weak switch_ref => move |sc| {
-            let is_on = switch_ref.is_active();
+        let bho_switch_ref = bho_switch.clone();
+        bho_slider.scale.connect_value_changed(move |sc| {
+            let is_on = bho_switch_ref.is_active();
             let threshold = sc.value() as u8;
             set_bho(is_on, threshold);
-        }));
-        
+        });
+
         let scale_ref = bho_slider.scale.clone();
-        bho_switch.switch.connect_state_set(glib::clone!(@weak scale_ref => @default-return glib::Propagation::Proceed, move |_sw, state| {
+        bho_switch.connect_active_notify(glib::clone!(@weak scale_ref => move |sw| {
+            let state = sw.is_active();
             let threshold = scale_ref.value() as u8;
             set_bho(state, threshold);
             scale_ref.set_sensitive(state);
-            glib::Propagation::Proceed
         }));
     }
 
