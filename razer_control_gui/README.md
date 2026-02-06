@@ -79,6 +79,7 @@ chmod +x RazerControl-0.2.0-x86_64.AppImage
 | Blade 17 | 2022 | 028B | ✅ Tested |
 | Blade Pro | 2017-2021 | Various | ✅ Tested |
 | Blade Stealth | 2017-2020 | Various | ✅ Tested |
+| Blade 15 Advanced | Mid 2021 | 0276 | ✅ Confirmed |
 | Razer Book 13 | 2020 | 026A | ✅ Tested |
 | **Blade 2025** | 2025 | **02c6** | ✅ **NEW!** |
 

@@ -26,7 +26,8 @@ pub enum DaemonCommand {
     GetSync (),
     SetBatteryHealthOptimizer { is_on: bool, threshold: u8 },
     GetBatteryHealthOptimizer (),
-    GetDeviceName 
+    GetDeviceName,
+    GetActualFanRpm,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -51,7 +52,8 @@ pub enum DaemonResponse {
     GetSync { sync: bool },
     SetBatteryHealthOptimizer { result: bool },
     GetBatteryHealthOptimizer { is_on: bool, threshold: u8 },
-    GetDeviceName { name: String }
+    GetDeviceName { name: String },
+    GetActualFanRpm { rpm: i32 },
 }
 
 #[allow(dead_code)]

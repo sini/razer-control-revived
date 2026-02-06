@@ -395,6 +395,13 @@ impl DeviceManager {
         return 0
     }
 
+    pub fn get_actual_fan_rpm(&mut self) -> i32 {
+        if let Some(laptop) = self.get_device() {
+            return laptop.read_fan_rpm_from_ec() as i32;
+        }
+        return 0;
+    }
+
     pub fn get_fan_rpm(&mut self, ac: usize) -> i32 {
         if let Some(laptop) = self.get_device() {
             if laptop.ac_state as usize == ac {
@@ -840,6 +847,20 @@ impl RazerLaptop {
     pub fn get_fan_rpm(&mut self) -> u16 {
         let res: u16 = self.fan_rpm as u16;
         return res * 100;
+    }
+
+    /// Read fan RPM from EC hardware.
+    /// Note: on many Razer models this returns the configured target,
+    /// not measured tachometer RPM (no tach register exposed via USB HID).
+    pub fn read_fan_rpm_from_ec(&mut self) -> u16 {
+        let mut report: RazerPacket = RazerPacket::new(0x0d, 0x81, 0x03);
+        report.args[0] = 0x00;
+        report.args[1] = 0x01;
+        report.args[2] = 0x00;
+        if let Some(response) = self.send_report(report) {
+            return response.args[2] as u16 * 100;
+        }
+        return self.fan_rpm as u16 * 100;
     }
 
     pub fn set_logo_led_state(&mut self, mode: u8) -> bool {

@@ -139,8 +139,13 @@ pub fn start_keyboard_animator_task() -> JoinHandle<()> {
 
 fn start_screensaver_monitor_task() -> JoinHandle<()> {
     thread::spawn(move || {
-        let dbus_session = Connection::new_session()
-            .expect("failed to connect to D-Bus session bus");
+        let dbus_session = match Connection::new_session() {
+            Ok(conn) => conn,
+            Err(e) => {
+                eprintln!("Screensaver monitor: D-Bus session unavailable ({}), skipping", e);
+                return;
+            }
+        };
         let  proxy = dbus_session.with_proxy("org.gnome.Mutter.DisplayConfig", "/org/gnome/Mutter/DisplayConfig", time::Duration::from_millis(5000));
         let _id = proxy.match_signal(|h: dbus_mutter_displayconfig::OrgFreedesktopDBusPropertiesPropertiesChanged, _: &Connection, _: &Message| {
             let online: Option<&i32> = arg::prop_cast(&h.changed_properties, "PowerSaveMode");
@@ -386,6 +391,9 @@ pub fn process_client_request(cmd: comms::DaemonCommand) -> Option<comms::Daemon
                     }
                 );
             }
+            comms::DaemonCommand::GetActualFanRpm => {
+                Some(comms::DaemonResponse::GetActualFanRpm { rpm: d.get_actual_fan_rpm() })
+            },
             comms::DaemonCommand::GetDeviceName => {
                 let name = match &d.device {
                     Some(device) => device.get_name(),
