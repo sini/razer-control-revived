@@ -123,6 +123,107 @@ jobs:
           name: rpm-package
           path: rpm-output/*.rpm
 
+  build-deb:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgtk-4-dev \
+            libadwaita-1-dev \
+            libdbus-1-dev \
+            libhidapi-dev \
+            libusb-1.0-0-dev \
+            libudev-dev \
+            libglib2.0-dev \
+            libgraphene-1.0-dev \
+            libpango1.0-dev \
+            libcairo2-dev \
+            libgdk-pixbuf-2.0-dev \
+            libsystemd-dev \
+            pkg-config \
+            dpkg-dev
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build
+        working-directory: razer_control_gui
+        run: cargo build --release
+
+      - name: Build .deb package
+        run: |
+          PKG="razercontrol-revived_${APP_VERSION}_amd64"
+          mkdir -p $PKG/DEBIAN
+          mkdir -p $PKG/usr/bin
+          mkdir -p $PKG/usr/share/razercontrol
+          mkdir -p $PKG/usr/share/applications
+          mkdir -p $PKG/usr/share/icons/hicolor/scalable/apps
+          mkdir -p $PKG/etc/udev/rules.d
+          mkdir -p $PKG/usr/lib/systemd/user
+
+          cp razer_control_gui/target/release/razer-settings $PKG/usr/bin/
+          cp razer_control_gui/target/release/razer-cli $PKG/usr/bin/
+          cp razer_control_gui/target/release/daemon $PKG/usr/bin/razer-daemon
+          cp razer_control_gui/data/devices/laptops.json $PKG/usr/share/razercontrol/
+          cp razer_control_gui/data/gui/razer-settings.desktop $PKG/usr/share/applications/
+          cp razer_control_gui/data/gui/com.github.encomjp.razercontrol.svg $PKG/usr/share/icons/hicolor/scalable/apps/
+          cp razer_control_gui/data/udev/99-hidraw-permissions.rules $PKG/etc/udev/rules.d/
+          cp razer_control_gui/data/services/systemd/razercontrol.service $PKG/usr/lib/systemd/user/
+
+          cat > $PKG/DEBIAN/control << 'CTRL'
+          Package: razercontrol-revived
+          Version: ${APP_VERSION}
+          Section: utils
+          Priority: optional
+          Architecture: amd64
+          Depends: libgtk-4-1, libadwaita-1-0, libdbus-1-3, libhidapi-hidraw0
+          Maintainer: EncomJP <encomjp@users.noreply.github.com>
+          Homepage: https://github.com/encomjp/razer-control-revived
+          Description: Razer Laptop Control - Revived
+           A Linux userspace application to control Razer Blade laptops.
+           No kernel modules (DKMS) required! Features a modern GTK4/libadwaita
+           interface for fan control, power modes, keyboard lighting, and
+           battery health optimization.
+          CTRL
+          # Remove leading whitespace from heredoc (DEBIAN/control must not have leading spaces on field names)
+          sed -i 's/^          //' $PKG/DEBIAN/control
+          # Substitute version variable
+          sed -i "s/\${APP_VERSION}/${APP_VERSION}/" $PKG/DEBIAN/control
+
+          cat > $PKG/DEBIAN/postinst << 'POSTINST'
+          #!/bin/sh
+          set -e
+          udevadm control --reload-rules || true
+          udevadm trigger || true
+          POSTINST
+          chmod 755 $PKG/DEBIAN/postinst
+
+          dpkg-deb --build --root-owner-group $PKG
+          mv ${PKG}.deb "razercontrol-revived_${APP_VERSION}_amd64.deb"
+
+      - name: Upload .deb
+        uses: actions/upload-artifact@v4
+        with:
+          name: deb-package
+          path: razercontrol-revived_*.deb
+
+  check-nix:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v30
+        with:
+          nix_path: nixpkgs=channel:nixpkgs-unstable
+
+      - name: Build with Nix
+        run: nix build --print-build-logs
+
   build-tarball:
     runs-on: ubuntu-24.04
     steps:
@@ -174,7 +275,7 @@ jobs:
 
   release:
     if: startsWith(github.ref, 'refs/tags/')
-    needs: [build-appimage, build-rpm, build-tarball]
+    needs: [build-appimage, build-rpm, build-deb, build-tarball, check-nix]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -195,4 +296,5 @@ jobs:
           files: |
             artifacts/appimage-package/*.AppImage
             artifacts/rpm-package/*.rpm
+            artifacts/deb-package/*.deb
             artifacts/linux-tarball/*.tar.gz
