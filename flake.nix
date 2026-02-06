@@ -41,7 +41,8 @@
           src = ./razer_control_gui;
 
           postConfigure = ''
-            substituteInPlace src/device.rs --replace-fail '/usr/share/razercontrol/laptops.json' '${./razer_control_gui/data/devices/laptops.json}'
+            substituteInPlace src/daemon/device.rs --replace-fail '/usr/share/razercontrol/laptops.json' '${./razer_control_gui/data/devices/laptops.json}'
+            substituteInPlace src/lib.rs --replace-fail '/usr/share/razercontrol/laptops.json' '${./razer_control_gui/data/devices/laptops.json}'
           '';
 
           postInstall = ''

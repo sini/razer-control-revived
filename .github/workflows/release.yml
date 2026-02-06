@@ -203,7 +203,6 @@ jobs:
           chmod 755 $PKG/DEBIAN/postinst
 
           dpkg-deb --build --root-owner-group $PKG
-          mv ${PKG}.deb "razercontrol-revived_${APP_VERSION}_amd64.deb"
 
       - name: Upload .deb
         uses: actions/upload-artifact@v4
