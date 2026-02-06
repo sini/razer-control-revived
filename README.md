@@ -18,17 +18,23 @@ If you find this project useful, please consider supporting its development:
 
 ## 📥 Downloads
 
-**[⬇️ Download Latest Release (v0.2.0)](https://github.com/encomjp/razer-control-revived/releases/tag/0.2.0)**
+**[⬇️ Download Latest Release (v0.2.1)](https://github.com/encomjp/razer-control-revived/releases/tag/v0.2.1)**
 
 | Package | Best For | Description |
 |---------|----------|-------------|
+| `razercontrol-revived_*.deb` | **Ubuntu / Debian** | Complete .deb package - installs everything |
 | `razercontrol-*.rpm` | **Fedora / RHEL** | Complete RPM package - installs everything |
 | `RazerControl-*.AppImage` | **All distros** | Universal portable GUI (needs daemon) |
 | `razer-control-*.tar.gz` | **Manual install** | Tarball with install script |
 
-### Fedora / RHEL (Recommended)
+### Ubuntu / Debian
 ```bash
-sudo dnf install ./razercontrol-0.2.0-1.fc43.x86_64.rpm
+sudo apt install ./razercontrol-revived_0.2.1_amd64.deb
+```
+
+### Fedora / RHEL
+```bash
+sudo dnf install ./razercontrol-0.2.1-1.fc41.x86_64.rpm
 ```
 
 ### All Other Distributions (AppImage)
@@ -37,13 +43,13 @@ Install the daemon first, then use the portable AppImage for the GUI:
 
 ```bash
 # 1. Install daemon from tarball
-tar -xzf razer-control-0.2.0-x86_64.tar.gz
-cd razer-control-0.2.0-x86_64
+tar -xzf razer-control-0.2.1-x86_64.tar.gz
+cd razer-control-0.2.1-x86_64
 sudo ./install.sh
 
 # 2. Run the AppImage
-chmod +x RazerControl-0.2.0-x86_64.AppImage
-./RazerControl-0.2.0-x86_64.AppImage
+chmod +x RazerControl-0.2.1-x86_64.AppImage
+./RazerControl-0.2.1-x86_64.AppImage
 ```
 
 > **Note:** Log out and back in (or reboot) after installation for udev rules to take effect.
