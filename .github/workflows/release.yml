@@ -25,6 +25,7 @@ jobs:
             libdbus-1-dev \
             libhidapi-dev \
             libusb-1.0-0-dev \
+            libudev-dev \
             libglib2.0-dev \
             libgraphene-1.0-dev \
             libpango1.0-dev \
@@ -136,6 +137,7 @@ jobs:
             libdbus-1-dev \
             libhidapi-dev \
             libusb-1.0-0-dev \
+            libudev-dev \
             libglib2.0-dev \
             libgraphene-1.0-dev \
             libpango1.0-dev \
