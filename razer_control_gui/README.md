@@ -27,7 +27,7 @@ If you find this project useful, please consider supporting its development:
 
 ## 📥 Downloads
 
-**[⬇️ Download Latest Release (v0.2.0)](https://github.com/encomjp/razer-control-revived/releases/tag/0.2.0)**
+**[⬇️ Download Latest Release (v0.2.3)](https://github.com/encomjp/razer-control-revived/releases/tag/v0.2.3)**
 
 | Package | Best For | Description |
 |---------|----------|-------------|
@@ -37,7 +37,7 @@ If you find this project useful, please consider supporting its development:
 
 ### Fedora / RHEL (Recommended)
 ```bash
-sudo dnf install ./razercontrol-0.2.0-1.fc43.x86_64.rpm
+sudo dnf install ./razercontrol-0.2.3-1.fc43.x86_64.rpm
 ```
 
 ### All Other Distributions (AppImage)
@@ -46,13 +46,13 @@ Install the daemon first, then use the portable AppImage for the GUI:
 
 ```bash
 # 1. Install daemon from tarball
-tar -xzf razer-control-0.2.0-x86_64.tar.gz
-cd razer-control-0.2.0-x86_64
+tar -xzf razer-control-0.2.3-x86_64.tar.gz
+cd razer-control-0.2.3-x86_64
 sudo ./install.sh
 
 # 2. Run the AppImage
-chmod +x RazerControl-0.2.0-x86_64.AppImage
-./RazerControl-0.2.0-x86_64.AppImage
+chmod +x RazerControl-0.2.3-x86_64.AppImage
+./RazerControl-0.2.3-x86_64.AppImage
 ```
 
 > **Note:** Log out and back in (or reboot) after installation for udev rules to take effect.
@@ -65,6 +65,8 @@ chmod +x RazerControl-0.2.0-x86_64.AppImage
 - 💡 **Logo LED** - Off, On, or Breathing
 - 🌈 **Keyboard RGB** - Brightness control and effects (Static, Wave, Breathing, Spectrum, etc.)
 - 🔋 **Battery Health Optimizer (BHO)** - Limit charge to 50-80% to extend battery lifespan
+- 📊 **System Monitor** - Live CPU/iGPU/dGPU temps, power draw, utilization, battery status
+- 🔔 **System Tray** - KDE system tray icon with sensor tooltip, close-to-tray
 - 🖥️ **GTK4 GUI** - Modern libadwaita interface with separate AC/Battery profiles
 - ⌨️ **CLI** - Full command-line control for scripting
 - 🔄 **Daemon** - Auto-loads your settings on startup
@@ -165,10 +167,12 @@ cd razer_control_gui/kde-widget
 ./install-plasmoid.sh
 ```
 
-Then add it to your panel: Right-click panel → Add Widgets → Search "Razer Control"
+Then add it to your desktop or panel: Right-click → Add Widgets → Search "Razer Control"
 
-- **Left-click**: Opens Razer Settings
-- **Right-click**: Quick menu with donation link
+The widget shows:
+- **Live system monitor** - CPU/iGPU/dGPU temps, power draw, and utilization
+- **Battery status** - charge %, charging/discharging wattage
+- **Clickable settings** - Profile, Fan, KB Brightness, Logo, Charge Limit (click to cycle)
 
 See [kde-widget/README.md](razer_control_gui/kde-widget/README.md) for more details.
 

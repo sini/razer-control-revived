@@ -553,7 +553,7 @@ fn get_cpu_utilization() -> Option<u32> {
     None
 }
 
-/// Create system monitor panel at the bottom (widget-style compact layout)
+/// Create system monitor panel at the bottom (widget-style layout)
 fn create_system_monitor(shared_state: tray::SharedSensorState) -> gtk::Box {
     let main_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
     main_box.set_margin_start(16);
@@ -562,15 +562,14 @@ fn create_system_monitor(shared_state: tray::SharedSensorState) -> gtk::Box {
     main_box.set_margin_bottom(4);
     main_box.add_css_class("toolbar");
 
-    // Helper: create a compact monitor row
+    // Helper: create a full-width monitor row (name + temp on left, power · util% on right)
     fn make_row(label_text: &str) -> (gtk::Box, gtk::Label, gtk::Label, gtk::Label, gtk::Label) {
-        let row = gtk::Box::new(gtk::Orientation::Horizontal, 8);
+        let row = gtk::Box::new(gtk::Orientation::Horizontal, 6);
         row.set_margin_top(1);
         row.set_margin_bottom(1);
 
         let name = gtk::Label::new(Some(label_text));
         name.add_css_class("caption");
-        name.set_width_request(36);
         name.set_xalign(0.0);
         name.set_opacity(0.6);
         row.append(&name);
@@ -578,16 +577,16 @@ fn create_system_monitor(shared_state: tray::SharedSensorState) -> gtk::Box {
         let temp = gtk::Label::new(None);
         temp.add_css_class("caption");
         temp.add_css_class("numeric");
-        temp.set_width_request(42);
-        temp.set_xalign(1.0);
         row.append(&temp);
+
+        let spacer = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+        spacer.set_hexpand(true);
+        row.append(&spacer);
 
         let power = gtk::Label::new(None);
         power.add_css_class("caption");
         power.add_css_class("numeric");
         power.set_opacity(0.7);
-        power.set_width_request(50);
-        power.set_xalign(1.0);
         row.append(&power);
 
         let dot = gtk::Label::new(Some("\u{00B7}"));
@@ -599,8 +598,6 @@ fn create_system_monitor(shared_state: tray::SharedSensorState) -> gtk::Box {
         util.add_css_class("caption");
         util.add_css_class("numeric");
         util.set_opacity(0.7);
-        util.set_width_request(30);
-        util.set_xalign(1.0);
         row.append(&util);
 
         (row, temp, power, dot, util)
@@ -610,8 +607,8 @@ fn create_system_monitor(shared_state: tray::SharedSensorState) -> gtk::Box {
     let (igpu_row, igpu_temp_l, igpu_power_l, igpu_dot, igpu_util_l) = make_row("iGPU");
     let (dgpu_row, dgpu_temp_l, dgpu_power_l, dgpu_dot, dgpu_util_l) = make_row("dGPU");
 
-    // Battery + Fan row combined on one line
-    let bottom_row = gtk::Box::new(gtk::Orientation::Horizontal, 8);
+    // Battery + Fan row (status + watts on left, fan on right)
+    let bottom_row = gtk::Box::new(gtk::Orientation::Horizontal, 6);
     bottom_row.set_margin_top(1);
     bottom_row.set_margin_bottom(1);
 
@@ -619,12 +616,13 @@ fn create_system_monitor(shared_state: tray::SharedSensorState) -> gtk::Box {
     bat_status_l.add_css_class("caption");
     bat_status_l.set_xalign(0.0);
     bat_status_l.set_opacity(0.6);
-    let bat_watts_l = gtk::Label::new(None);
-    bat_watts_l.add_css_class("caption");
-    bat_watts_l.add_css_class("numeric");
     let bat_pct_l = gtk::Label::new(None);
     bat_pct_l.add_css_class("caption");
     bat_pct_l.add_css_class("numeric");
+    let bat_watts_l = gtk::Label::new(None);
+    bat_watts_l.add_css_class("caption");
+    bat_watts_l.add_css_class("numeric");
+    bat_watts_l.set_opacity(0.7);
 
     let spacer = gtk::Box::new(gtk::Orientation::Horizontal, 0);
     spacer.set_hexpand(true);
@@ -635,8 +633,8 @@ fn create_system_monitor(shared_state: tray::SharedSensorState) -> gtk::Box {
     fan_l.set_opacity(0.6);
 
     bottom_row.append(&bat_status_l);
-    bottom_row.append(&bat_watts_l);
     bottom_row.append(&bat_pct_l);
+    bottom_row.append(&bat_watts_l);
     bottom_row.append(&spacer);
     bottom_row.append(&fan_l);
 
@@ -1453,7 +1451,7 @@ fn make_about_page(device: SupportedDevice) -> SettingsPage {
     let row = SettingsRow::new("Name", &app_name);
     section.add_row(&row.row);
 
-    let version_label = gtk::Label::new(Some("v0.2.2"));
+    let version_label = gtk::Label::new(Some("v0.2.3"));
     let row = SettingsRow::new("Version", &version_label);
     section.add_row(&row.row);
 
