@@ -220,6 +220,9 @@ jobs:
         with:
           nix_path: nixpkgs=channel:nixpkgs-unstable
 
+      - name: Update flake inputs
+        run: nix flake update
+
       - name: Build with Nix
         run: nix build --print-build-logs
 
