@@ -1,5 +1,5 @@
 Name:           razercontrol-revived
-Version:        0.2.5
+Version:        0.2.6
 Release:        1%{?dist}
 Summary:        Razer Laptop Control - Revived
 
@@ -70,6 +70,11 @@ udevadm trigger
 %systemd_user_postun_with_restart razercontrol.service
 
 %changelog
+* Mon Feb 09 2026 EncomJP <encomjp@users.noreply.github.com> - 0.2.6-1
+- Fix panic inside panic hook during socket cleanup
+- Fix potential panic from system time anomaly in get_millis()
+- Fix panic during graceful shutdown socket cleanup
+
 * Mon Feb 09 2026 EncomJP <encomjp@users.noreply.github.com> - 0.2.5-1
 - Security: restrict daemon socket permissions to owner-only (0600)
 - Fix buffer overflow in set_standard_effect params

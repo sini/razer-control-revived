@@ -1539,7 +1539,7 @@ fn make_about_page(device: SupportedDevice) -> SettingsPage {
     let row = SettingsRow::new("Name", &app_name);
     section.add_row(&row.row);
 
-    let version_label = gtk::Label::new(Some("v0.2.5"));
+    let version_label = gtk::Label::new(Some("v0.2.6"));
     let row = SettingsRow::new("Version", &version_label);
     section.add_row(&row.row);
 

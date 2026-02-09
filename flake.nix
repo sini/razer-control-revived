@@ -23,7 +23,7 @@
 
         packages.default = pkgs.rustPlatform.buildRustPackage {
           pname = name;
-          version = "0.2.5";
+          version = "0.2.6";
 
           nativeBuildInputs = with pkgs; [
             pkg-config

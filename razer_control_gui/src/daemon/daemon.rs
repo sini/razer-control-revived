@@ -118,9 +118,7 @@ fn setup_panic_hook() {
     let default_panic_hook = std::panic::take_hook();
     std::panic::set_hook(Box::new(move |info| {
         error!("Something went wrong! Removing the socket path");
-        if std::fs::metadata(comms::SOCKET_PATH).is_ok() {
-            std::fs::remove_file(comms::SOCKET_PATH).unwrap();
-        }
+        let _ = std::fs::remove_file(comms::SOCKET_PATH);
         default_panic_hook(info);
     }));
 }
@@ -294,9 +292,7 @@ pub fn start_shutdown_task() -> JoinHandle<()> {
         if let Err(error) = config::Configuration::write_effects_save(json) {
             error!("Error writing config {}", error);
         }
-        if std::fs::metadata(comms::SOCKET_PATH).is_ok() {
-            std::fs::remove_file(comms::SOCKET_PATH).unwrap();
-        }
+        let _ = std::fs::remove_file(comms::SOCKET_PATH);
         std::process::exit(0);
     })
 }

@@ -12,7 +12,7 @@ pub const ANIMATION_SLEEP_MS: u64 = (1000.0 / ANIMATION_FPS as f32) as u64;
 pub fn get_millis() -> u128 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .unwrap()
+        .unwrap_or_default()
         .as_millis()
 }
 
