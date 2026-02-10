@@ -27,7 +27,7 @@ If you find this project useful, please consider supporting its development:
 
 ## 📥 Downloads
 
-**[⬇️ Download Latest Release (v0.2.6)](https://github.com/encomjp/razer-control-revived/releases/tag/v0.2.6)**
+**[⬇️ Download Latest Release (v0.2.8)](https://github.com/encomjp/razer-control-revived/releases/tag/v0.2.8)**
 
 | Package | Best For | Description |
 |---------|----------|-------------|
@@ -38,12 +38,12 @@ If you find this project useful, please consider supporting its development:
 
 ### Ubuntu / Debian
 ```bash
-sudo apt install ./razercontrol-revived_0.2.6_amd64.deb
+sudo apt install ./razercontrol-revived_0.2.8_amd64.deb
 ```
 
 ### Fedora / RHEL
 ```bash
-sudo dnf install ./razercontrol-0.2.6-1.fc41.x86_64.rpm
+sudo dnf install ./razercontrol-0.2.8-1.fc41.x86_64.rpm
 ```
 
 ### All Other Distributions (AppImage)
@@ -52,13 +52,13 @@ Install the daemon first, then use the portable AppImage for the GUI:
 
 ```bash
 # 1. Install daemon from tarball
-tar -xzf razer-control-0.2.6-x86_64.tar.gz
-cd razer-control-0.2.6-x86_64
+tar -xzf razer-control-0.2.8-x86_64.tar.gz
+cd razer-control-0.2.8-x86_64
 sudo ./install.sh
 
 # 2. Run the AppImage
-chmod +x RazerControl-0.2.6-x86_64.AppImage
-./RazerControl-0.2.6-x86_64.AppImage
+chmod +x RazerControl-0.2.8-x86_64.AppImage
+./RazerControl-0.2.8-x86_64.AppImage
 ```
 
 > **Note:** Log out and back in (or reboot) after installation for udev rules to take effect.
@@ -174,9 +174,10 @@ cd razer_control_gui/kde-widget
 Then add it to your desktop or panel: Right-click → Add Widgets → Search "Razer Control"
 
 The widget shows:
-- **Live system monitor** - CPU/iGPU/dGPU temps, power draw, and utilization
-- **Battery status** - charge %, charging/discharging wattage
-- **Clickable settings** - Profile, Fan, KB Brightness, Logo, Charge Limit (click to cycle)
+- **Live system monitor** - CPU/iGPU/dGPU temps, frequencies, power draw (including CPU package via RAPL), and utilization
+- **Battery status** - charge %, charging/discharging wattage with progress bar
+- **Clickable settings** - Profile, Fan, KB Brightness, Logo, Charge Limit (click to cycle) in a unified grouped card
+- **Correct iGPU naming** - Properly detects Radeon 880M (AI 365) vs 890M (AI 370) from CPU model
 
 See [kde-widget/README.md](razer_control_gui/kde-widget/README.md) for more details.
 

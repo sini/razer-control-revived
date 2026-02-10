@@ -96,11 +96,10 @@ PlasmoidItem {
 
     // --- Full representation (desktop / expanded) ---
     fullRepresentation: Item {
-        Layout.minimumWidth: Kirigami.Units.gridUnit * 20
-        Layout.maximumWidth: Kirigami.Units.gridUnit * 24
-        Layout.preferredWidth: Kirigami.Units.gridUnit * 22
+        Layout.minimumWidth: Kirigami.Units.gridUnit * 22
+        Layout.maximumWidth: Kirigami.Units.gridUnit * 28
+        Layout.preferredWidth: Kirigami.Units.gridUnit * 25
         Layout.preferredHeight: mainCol.implicitHeight + Kirigami.Units.largeSpacing * 2
-        Layout.maximumHeight: mainCol.implicitHeight + Kirigami.Units.largeSpacing * 2
         implicitHeight: mainCol.implicitHeight + Kirigami.Units.largeSpacing * 2
 
         ColumnLayout {
@@ -141,261 +140,428 @@ PlasmoidItem {
             Kirigami.Separator { Layout.fillWidth: true; Layout.topMargin: Kirigami.Units.smallSpacing }
 
             // ===== SYSTEM MONITOR (merged temps + power + util) =====
-            ColumnLayout {
+            Rectangle {
                 Layout.fillWidth: true
-                spacing: Kirigami.Units.smallSpacing
+                implicitHeight: monitorCol.implicitHeight + Kirigami.Units.smallSpacing * 2
+                radius: 8
+                color: Qt.rgba(Kirigami.Theme.backgroundColor.r, Kirigami.Theme.backgroundColor.g, Kirigami.Theme.backgroundColor.b, 0.3)
+                border.width: 1
+                border.color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.1)
 
-                // CPU
-                RowLayout {
-                    Layout.fillWidth: true
+                ColumnLayout {
+                    id: monitorCol
+                    anchors.fill: parent
+                    anchors.margins: Kirigami.Units.smallSpacing
                     spacing: Kirigami.Units.smallSpacing
-                    Kirigami.Icon { source: "cpu-symbolic"; Layout.preferredWidth: 16; Layout.preferredHeight: 16 }
-                    QQC2.Label { text: cpuName; Layout.fillWidth: true; elide: Text.ElideRight; font.pixelSize: Kirigami.Theme.smallFont.pixelSize * 0.9; opacity: 0.8 }
-                    QQC2.Label {
-                        text: cpuTemp !== "--" ? cpuTemp + "\u00B0C" : ""
-                        font.bold: true; Layout.preferredWidth: 42; horizontalAlignment: Text.AlignRight
-                        color: cpuTemp !== "--" ? (parseFloat(cpuTemp) > 90 ? "#ff4444" : parseFloat(cpuTemp) > 75 ? "#ffaa00" : "#44d62c") : Kirigami.Theme.textColor
+
+                    // CPU
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: Kirigami.Units.smallSpacing
+                        Kirigami.Icon { source: "cpu-symbolic"; Layout.preferredWidth: 18; Layout.preferredHeight: 18; opacity: 0.9 }
+                        QQC2.Label { 
+                            text: cpuName; 
+                            Layout.fillWidth: true; 
+                            elide: Text.ElideRight; 
+                            font.pixelSize: Kirigami.Theme.smallFont.pixelSize; 
+                            font.weight: Font.Medium
+                        }
+                        QQC2.Label {
+                            text: cpuTemp !== "--" ? cpuTemp + "°C" : ""
+                            font.bold: true; 
+                            font.pixelSize: Kirigami.Theme.defaultFont.pixelSize
+                            Layout.preferredWidth: 48; 
+                            horizontalAlignment: Text.AlignRight
+                            color: cpuTemp !== "--" ? (parseFloat(cpuTemp) > 90 ? "#ff4444" : parseFloat(cpuTemp) > 75 ? "#ffaa00" : "#44d62c") : Kirigami.Theme.textColor
+                        }
+                        QQC2.Label { 
+                            text: cpuFreq !== "--" ? cpuFreq + " GHz" : ""; 
+                            Layout.preferredWidth: 62; 
+                            horizontalAlignment: Text.AlignRight; 
+                            opacity: 0.7;
+                            font.pixelSize: Kirigami.Theme.smallFont.pixelSize
+                        }
+                        Rectangle {
+                            Layout.preferredWidth: 1
+                            Layout.preferredHeight: 14
+                            color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.2)
+                            visible: cpuPower !== "--"
+                        }
+                        QQC2.Label { 
+                            text: cpuPower !== "--" ? cpuPower + " W" : ""; 
+                            Layout.preferredWidth: 48; 
+                            horizontalAlignment: Text.AlignRight; 
+                            font.weight: Font.Medium;
+                            font.pixelSize: Kirigami.Theme.smallFont.pixelSize
+                        }
+                        QQC2.Label { 
+                            text: cpuUtil !== "--" ? cpuUtil + "%" : ""; 
+                            Layout.preferredWidth: 32; 
+                            horizontalAlignment: Text.AlignRight; 
+                            opacity: 0.7;
+                            font.pixelSize: Kirigami.Theme.smallFont.pixelSize
+                        }
                     }
-                    QQC2.Label { text: cpuFreq !== "--" ? cpuFreq + " GHz" : ""; Layout.preferredWidth: 56; horizontalAlignment: Text.AlignRight; opacity: 0.7 }
-                    QQC2.Label { text: cpuPower !== "--" ? cpuPower + " W" : ""; Layout.preferredWidth: 46; horizontalAlignment: Text.AlignRight; opacity: 0.8 }
-                    QQC2.Label { text: cpuUtil !== "--" ? cpuUtil + "%" : ""; Layout.preferredWidth: 28; horizontalAlignment: Text.AlignRight; opacity: 0.7 }
-                }
 
-                // iGPU
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: Kirigami.Units.smallSpacing
-                    visible: igpuTemp !== "--" || igpuPower !== "--"
-                    Kirigami.Icon { source: "video-display-symbolic"; Layout.preferredWidth: 16; Layout.preferredHeight: 16 }
-                    QQC2.Label { text: igpuName; Layout.fillWidth: true; elide: Text.ElideRight; font.pixelSize: Kirigami.Theme.smallFont.pixelSize * 0.9; opacity: 0.8 }
-                    QQC2.Label {
-                        text: igpuTemp !== "--" ? igpuTemp + "\u00B0C" : ""
-                        font.bold: true; Layout.preferredWidth: 42; horizontalAlignment: Text.AlignRight
-                        color: igpuTemp !== "--" ? (parseFloat(igpuTemp) > 90 ? "#ff4444" : parseFloat(igpuTemp) > 75 ? "#ffaa00" : "#44d62c") : Kirigami.Theme.textColor
+                    // iGPU
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: Kirigami.Units.smallSpacing
+                        visible: igpuTemp !== "--" || igpuPower !== "--"
+                        Kirigami.Icon { source: "video-display-symbolic"; Layout.preferredWidth: 18; Layout.preferredHeight: 18; opacity: 0.9 }
+                        QQC2.Label { 
+                            text: igpuName; 
+                            Layout.fillWidth: true; 
+                            elide: Text.ElideRight; 
+                            font.pixelSize: Kirigami.Theme.smallFont.pixelSize;
+                            font.weight: Font.Medium
+                        }
+                        QQC2.Label {
+                            text: igpuTemp !== "--" ? igpuTemp + "°C" : ""
+                            font.bold: true; 
+                            font.pixelSize: Kirigami.Theme.defaultFont.pixelSize
+                            Layout.preferredWidth: 48; 
+                            horizontalAlignment: Text.AlignRight
+                            color: igpuTemp !== "--" ? (parseFloat(igpuTemp) > 90 ? "#ff4444" : parseFloat(igpuTemp) > 75 ? "#ffaa00" : "#44d62c") : Kirigami.Theme.textColor
+                        }
+                        QQC2.Label { 
+                            text: igpuFreq !== "--" ? igpuFreq + " MHz" : ""; 
+                            Layout.preferredWidth: 62; 
+                            horizontalAlignment: Text.AlignRight; 
+                            opacity: 0.7;
+                            font.pixelSize: Kirigami.Theme.smallFont.pixelSize
+                        }
+                        Rectangle {
+                            Layout.preferredWidth: 1
+                            Layout.preferredHeight: 14
+                            color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.2)
+                            visible: igpuPower !== "--"
+                        }
+                        QQC2.Label { 
+                            text: igpuPower !== "--" ? igpuPower + " W" : ""; 
+                            Layout.preferredWidth: 48; 
+                            horizontalAlignment: Text.AlignRight; 
+                            font.weight: Font.Medium;
+                            font.pixelSize: Kirigami.Theme.smallFont.pixelSize
+                        }
+                        QQC2.Label { 
+                            text: igpuUtil !== "--" ? igpuUtil + "%" : ""; 
+                            Layout.preferredWidth: 32; 
+                            horizontalAlignment: Text.AlignRight; 
+                            opacity: 0.7;
+                            font.pixelSize: Kirigami.Theme.smallFont.pixelSize
+                        }
                     }
-                    QQC2.Label { text: igpuFreq !== "--" ? igpuFreq + " MHz" : ""; Layout.preferredWidth: 56; horizontalAlignment: Text.AlignRight; opacity: 0.7 }
-                    QQC2.Label { text: igpuPower !== "--" ? igpuPower + " W" : ""; Layout.preferredWidth: 46; horizontalAlignment: Text.AlignRight; opacity: 0.8 }
-                    QQC2.Label { text: igpuUtil !== "--" ? igpuUtil + "%" : ""; Layout.preferredWidth: 28; horizontalAlignment: Text.AlignRight; opacity: 0.7 }
-                }
 
-                // dGPU
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: Kirigami.Units.smallSpacing
-                    Kirigami.Icon { source: "video-display-symbolic"; Layout.preferredWidth: 16; Layout.preferredHeight: 16 }
-                    QQC2.Label { text: dgpuName; Layout.fillWidth: true; elide: Text.ElideRight; font.pixelSize: Kirigami.Theme.smallFont.pixelSize * 0.9; opacity: 0.8 }
-                    QQC2.Label {
-                        text: dgpuTemp !== "--" ? dgpuTemp + "\u00B0C" : "Off"
-                        font.bold: true; Layout.preferredWidth: 42; horizontalAlignment: Text.AlignRight
-                        color: dgpuTemp !== "--" ? (parseFloat(dgpuTemp) > 85 ? "#ff4444" : parseFloat(dgpuTemp) > 70 ? "#ffaa00" : "#44d62c") : Kirigami.Theme.disabledTextColor
+                    // dGPU
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: Kirigami.Units.smallSpacing
+                        Kirigami.Icon { 
+                            source: "video-display-symbolic"; 
+                            Layout.preferredWidth: 18; 
+                            Layout.preferredHeight: 18; 
+                            opacity: dgpuTemp !== "--" ? 0.9 : 0.4
+                        }
+                        QQC2.Label { 
+                            text: dgpuName; 
+                            Layout.fillWidth: true; 
+                            elide: Text.ElideRight; 
+                            font.pixelSize: Kirigami.Theme.smallFont.pixelSize;
+                            font.weight: Font.Medium
+                            opacity: dgpuTemp !== "--" ? 1.0 : 0.5
+                        }
+                        QQC2.Label {
+                            text: dgpuTemp !== "--" ? dgpuTemp + "°C" : "Off"
+                            font.bold: dgpuTemp !== "--"
+                            font.pixelSize: Kirigami.Theme.defaultFont.pixelSize
+                            Layout.preferredWidth: 48; 
+                            horizontalAlignment: Text.AlignRight
+                            color: dgpuTemp !== "--" ? (parseFloat(dgpuTemp) > 85 ? "#ff4444" : parseFloat(dgpuTemp) > 70 ? "#ffaa00" : "#44d62c") : Kirigami.Theme.disabledTextColor
+                        }
+                        QQC2.Label { 
+                            text: dgpuFreq !== "--" ? dgpuFreq + " MHz" : ""; 
+                            Layout.preferredWidth: 62; 
+                            horizontalAlignment: Text.AlignRight; 
+                            opacity: 0.7;
+                            font.pixelSize: Kirigami.Theme.smallFont.pixelSize
+                        }
+                        Rectangle {
+                            Layout.preferredWidth: 1
+                            Layout.preferredHeight: 14
+                            color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.2)
+                            visible: dgpuPower !== "--"
+                        }
+                        QQC2.Label { 
+                            text: dgpuPower !== "--" ? dgpuPower + " W" : ""; 
+                            Layout.preferredWidth: 48; 
+                            horizontalAlignment: Text.AlignRight; 
+                            font.weight: Font.Medium;
+                            font.pixelSize: Kirigami.Theme.smallFont.pixelSize
+                        }
+                        QQC2.Label { 
+                            text: dgpuUtil !== "--" ? dgpuUtil + "%" : ""; 
+                            Layout.preferredWidth: 32; 
+                            horizontalAlignment: Text.AlignRight; 
+                            opacity: 0.7;
+                            font.pixelSize: Kirigami.Theme.smallFont.pixelSize
+                        }
                     }
-                    QQC2.Label { text: dgpuFreq !== "--" ? dgpuFreq + " MHz" : ""; Layout.preferredWidth: 56; horizontalAlignment: Text.AlignRight; opacity: 0.7 }
-                    QQC2.Label { text: dgpuPower !== "--" ? dgpuPower + " W" : ""; Layout.preferredWidth: 46; horizontalAlignment: Text.AlignRight; opacity: 0.8 }
-                    QQC2.Label { text: dgpuUtil !== "--" ? dgpuUtil + "%" : ""; Layout.preferredWidth: 28; horizontalAlignment: Text.AlignRight; opacity: 0.7 }
                 }
-
-
             }
 
             // ===== BATTERY BAR =====
-            ColumnLayout {
-                Layout.fillWidth: true; spacing: 2
+            Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: batteryCol.implicitHeight + Kirigami.Units.smallSpacing * 2
+                radius: 8
                 visible: batteryPct !== "--"
+                color: Qt.rgba(Kirigami.Theme.backgroundColor.r, Kirigami.Theme.backgroundColor.g, Kirigami.Theme.backgroundColor.b, 0.3)
+                border.width: 1
+                border.color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.1)
 
-                Kirigami.Separator { Layout.fillWidth: true }
-
-                RowLayout {
-                    Layout.fillWidth: true
+                ColumnLayout {
+                    id: batteryCol
+                    anchors.fill: parent
+                    anchors.margins: Kirigami.Units.smallSpacing
                     spacing: Kirigami.Units.smallSpacing
-                    Kirigami.Icon {
-                        source: batteryStatus === "Charging" ? "battery-charging" : batteryStatus === "Not charging" ? "battery-level-80-charging" : "battery"
-                        Layout.preferredWidth: 16; Layout.preferredHeight: 16
-                    }
-                    QQC2.Label {
-                        text: {
-                            if (batteryStatus === "Charging") return "Battery \u2013 Charging";
-                            if (batteryStatus === "Not charging") return "Battery \u2013 Full (Limit)";
-                            if (batteryStatus === "Full") return "Battery \u2013 Full";
-                            return "Battery \u2013 Discharging";
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: Kirigami.Units.smallSpacing
+                        Kirigami.Icon {
+                            source: batteryStatus === "Charging" ? "battery-charging" : batteryStatus === "Not charging" ? "battery-level-80-charging" : "battery"
+                            Layout.preferredWidth: 18; Layout.preferredHeight: 18
                         }
-                    }
-                    Item { Layout.fillWidth: true }
-                    QQC2.Label {
-                        visible: batteryWatts !== "--" && batteryWatts !== "0.0" && (batteryStatus === "Charging" || batteryStatus === "Discharging")
-                        text: batteryStatus === "Charging" ? "+" + batteryWatts + " W" : "\u2212" + batteryWatts + " W"
-                        font.bold: true
-                        color: batteryStatus === "Charging" ? "#44d62c" : "#ffaa00"
-                    }
-                    QQC2.Label { text: batteryPct + "%"; font.bold: true }
-                }
-                QQC2.ProgressBar {
-                    Layout.fillWidth: true
-                    from: 0; to: 100
-                    value: batteryPct !== "--" ? parseInt(batteryPct) : 0
-                }
-            }
-
-            Kirigami.Separator { Layout.fillWidth: true }
-
-            // ===== SETTINGS (clickable rows) =====
-            Kirigami.Heading { text: "Settings"; level: 5; opacity: 0.6 }
-
-            // Profile — click to cycle
-            Rectangle {
-                Layout.fillWidth: true; implicitHeight: profileRow.implicitHeight + 8; radius: 6
-                color: profileMouse.containsMouse ? Qt.rgba(Kirigami.Theme.highlightColor.r, Kirigami.Theme.highlightColor.g, Kirigami.Theme.highlightColor.b, 0.15) : "transparent"
-                MouseArea {
-                    id: profileMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        root._lastWriteTime = Date.now();
-                        var cur = parseInt(root.powerProfile);
-                        var next = isNaN(cur) ? 0 : (cur + 1) % 4;
-                        executable.exec("razer-cli write power " + root.acState + " " + next);
-                        root.powerProfile = next.toString();
-                        refreshTimer.restart();
-                    }
-                }
-                RowLayout {
-                    id: profileRow; anchors.fill: parent; anchors.leftMargin: 4; anchors.rightMargin: 4
-                    Kirigami.Icon { source: "system-run"; Layout.preferredWidth: 16; Layout.preferredHeight: 16 }
-                    QQC2.Label { text: "Profile" }
-                    Item { Layout.fillWidth: true }
-                    QQC2.Label {
-                        text: { switch(powerProfile) { case "0": return "Balanced"; case "1": return "Gaming"; case "2": return "Creator"; case "3": return "Silent"; case "4": return "Custom"; default: return "--"; } }
-                        font.bold: true; color: "#44d62c"
-                    }
-                    Kirigami.Icon { source: "go-next-symbolic"; Layout.preferredWidth: 12; Layout.preferredHeight: 12; opacity: 0.4 }
-                }
-            }
-
-            // Fan — click to cycle Auto/3000/3500/4000/4500/5000
-            Rectangle {
-                Layout.fillWidth: true; implicitHeight: fanRow.implicitHeight + 8; radius: 6
-                color: fanMouse.containsMouse ? Qt.rgba(Kirigami.Theme.highlightColor.r, Kirigami.Theme.highlightColor.g, Kirigami.Theme.highlightColor.b, 0.15) : "transparent"
-                MouseArea {
-                    id: fanMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        root._lastWriteTime = Date.now();
-                        var cur = parseInt(root.fanSpeed);
-                        var idx = 0;
-                        if (!isNaN(cur)) {
-                            for (var i = 0; i < root.fanPresets.length; i++) {
-                                if (root.fanPresets[i] === cur) { idx = i; break; }
+                        QQC2.Label {
+                            text: {
+                                if (batteryStatus === "Charging") return "Battery – Charging";
+                                if (batteryStatus === "Not charging") return "Battery – Full (Limit)";
+                                if (batteryStatus === "Full") return "Battery – Full";
+                                return "Battery – Discharging";
                             }
+                            font.weight: Font.Medium
                         }
-                        var next = (idx + 1) % root.fanPresets.length;
-                        executable.exec("razer-cli write fan " + root.acState + " " + root.fanPresets[next]);
-                        root.fanSpeed = root.fanPresets[next].toString();
-                        refreshTimer.restart();
-                    }
-                }
-                RowLayout {
-                    id: fanRow; anchors.fill: parent; anchors.leftMargin: 4; anchors.rightMargin: 4
-                    Kirigami.Icon { source: "speedometer-symbolic"; Layout.preferredWidth: 16; Layout.preferredHeight: 16 }
-                    QQC2.Label { text: "Fan" }
-                    Item { Layout.fillWidth: true }
-                    QQC2.Label {
-                        text: fanSpeed === "--" ? "--" : (fanSpeed === "0" ? "Auto" : fanSpeed + " RPM")
-                        font.bold: true
-                    }
-                    Kirigami.Icon { source: "go-next-symbolic"; Layout.preferredWidth: 12; Layout.preferredHeight: 12; opacity: 0.4 }
-                }
-            }
-
-            // KB Brightness — click to cycle 0/25/50/75/100
-            Rectangle {
-                Layout.fillWidth: true; implicitHeight: brightRow.implicitHeight + 8; radius: 6
-                color: brightMouse.containsMouse ? Qt.rgba(Kirigami.Theme.highlightColor.r, Kirigami.Theme.highlightColor.g, Kirigami.Theme.highlightColor.b, 0.15) : "transparent"
-                MouseArea {
-                    id: brightMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        root._lastWriteTime = Date.now();
-                        var steps = [0, 25, 50, 75, 100];
-                        var cur = parseInt(root.brightness);
-                        var idx = 0;
-                        for (var i = 0; i < steps.length; i++) { if (steps[i] === cur) { idx = i; break; } }
-                        var next = steps[(idx + 1) % steps.length];
-                        executable.exec("razer-cli write brightness " + root.acState + " " + next);
-                        root.brightness = next.toString();
-                        refreshTimer.restart();
-                    }
-                }
-                RowLayout {
-                    id: brightRow; anchors.fill: parent; anchors.leftMargin: 4; anchors.rightMargin: 4
-                    Kirigami.Icon { source: "brightness-high-symbolic"; Layout.preferredWidth: 16; Layout.preferredHeight: 16 }
-                    QQC2.Label { text: "KB Brightness" }
-                    Item { Layout.fillWidth: true }
-                    QQC2.Label {
-                        text: brightness === "0" ? "Off" : brightness !== "--" ? brightness + "%" : "--"
-                        font.bold: true
-                        color: brightness === "0" ? Kirigami.Theme.disabledTextColor : Kirigami.Theme.textColor
-                    }
-                    Kirigami.Icon { source: "go-next-symbolic"; Layout.preferredWidth: 12; Layout.preferredHeight: 12; opacity: 0.4 }
-                }
-            }
-
-            // Logo — click to cycle Off/On/Breathing
-            Rectangle {
-                Layout.fillWidth: true; implicitHeight: logoRow.implicitHeight + 8; radius: 6
-                color: logoMouse.containsMouse ? Qt.rgba(Kirigami.Theme.highlightColor.r, Kirigami.Theme.highlightColor.g, Kirigami.Theme.highlightColor.b, 0.15) : "transparent"
-                MouseArea {
-                    id: logoMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        root._lastWriteTime = Date.now();
-                        var cur = parseInt(root.logoMode);
-                        var next = isNaN(cur) ? 0 : (cur + 1) % 3;
-                        executable.exec("razer-cli write logo " + root.acState + " " + next);
-                        root.logoMode = next.toString();
-                        refreshTimer.restart();
-                    }
-                }
-                RowLayout {
-                    id: logoRow; anchors.fill: parent; anchors.leftMargin: 4; anchors.rightMargin: 4
-                    Kirigami.Icon { source: "preferences-desktop-display-color"; Layout.preferredWidth: 16; Layout.preferredHeight: 16 }
-                    QQC2.Label { text: "Logo" }
-                    Item { Layout.fillWidth: true }
-                    QQC2.Label {
-                        text: { switch(logoMode) { case "0": return "Off"; case "1": return "On"; case "2": return "Breathing"; default: return "--"; } }
-                        font.bold: true
-                        color: logoMode === "0" ? Kirigami.Theme.disabledTextColor : "#44d62c"
-                    }
-                    Kirigami.Icon { source: "go-next-symbolic"; Layout.preferredWidth: 12; Layout.preferredHeight: 12; opacity: 0.4 }
-                }
-            }
-
-            // Charge Limit — click to toggle on/off
-            Rectangle {
-                Layout.fillWidth: true; implicitHeight: bhoRow.implicitHeight + 8; radius: 6
-                color: bhoMouse.containsMouse ? Qt.rgba(Kirigami.Theme.highlightColor.r, Kirigami.Theme.highlightColor.g, Kirigami.Theme.highlightColor.b, 0.15) : "transparent"
-                MouseArea {
-                    id: bhoMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        root._lastWriteTime = Date.now();
-                        var isOn = root.bhoStatus.indexOf("On") >= 0;
-                        if (isOn) { executable.exec("razer-cli write bho off"); root.bhoStatus = "Off"; }
-                        else { executable.exec("razer-cli write bho on 80"); root.bhoStatus = "On/80%"; }
-                        refreshTimer.restart();
-                    }
-                }
-                RowLayout {
-                    id: bhoRow; anchors.fill: parent; anchors.leftMargin: 4; anchors.rightMargin: 4
-                    Kirigami.Icon { source: "battery-good-charging-symbolic"; Layout.preferredWidth: 16; Layout.preferredHeight: 16 }
-                    QQC2.Label { text: "Charge Limit" }
-                    Item { Layout.fillWidth: true }
-                    QQC2.Label {
-                        text: bhoStatus.indexOf("On") >= 0 ? "On" : "Off"
-                        font.bold: true
-                        color: bhoStatus.indexOf("On") >= 0 ? "#44d62c" : Kirigami.Theme.disabledTextColor
-                    }
-                    QQC2.Label {
-                        visible: bhoStatus.indexOf("On") >= 0
-                        text: {
-                            var m = bhoStatus.match(/(\d+)/);
-                            return m ? m[1] + "%" : "";
+                        Item { Layout.fillWidth: true }
+                        QQC2.Label {
+                            visible: batteryWatts !== "--" && batteryWatts !== "0.0" && (batteryStatus === "Charging" || batteryStatus === "Discharging")
+                            text: batteryStatus === "Charging" ? "+" + batteryWatts + " W" : "−" + batteryWatts + " W"
+                            font.bold: true
+                            font.pixelSize: Kirigami.Theme.defaultFont.pixelSize
+                            color: batteryStatus === "Charging" ? "#44d62c" : "#ffaa00"
                         }
-                        opacity: 0.6
+                        QQC2.Label { 
+                            text: batteryPct + "%"; 
+                            font.bold: true;
+                            font.pixelSize: Kirigami.Theme.defaultFont.pixelSize
+                        }
                     }
-                    Kirigami.Icon { source: "go-next-symbolic"; Layout.preferredWidth: 12; Layout.preferredHeight: 12; opacity: 0.4 }
+                    QQC2.ProgressBar {
+                        Layout.fillWidth: true
+                        from: 0; to: 100
+                        value: batteryPct !== "--" ? parseInt(batteryPct) : 0
+                    }
+                }
+            }
+
+            Kirigami.Separator { Layout.fillWidth: true; Layout.topMargin: Kirigami.Units.smallSpacing }
+
+            // ===== SETTINGS (single grouped card) =====
+            Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: settingsCol.implicitHeight + Kirigami.Units.smallSpacing * 2
+                radius: 8
+                color: Qt.rgba(Kirigami.Theme.backgroundColor.r, Kirigami.Theme.backgroundColor.g, Kirigami.Theme.backgroundColor.b, 0.3)
+                border.width: 1
+                border.color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.1)
+
+                ColumnLayout {
+                    id: settingsCol
+                    anchors.fill: parent
+                    anchors.margins: Kirigami.Units.smallSpacing
+                    spacing: 0
+
+                    // Profile
+                    MouseArea {
+                        id: profileMouse
+                        Layout.fillWidth: true
+                        implicitHeight: profileRow.implicitHeight + Kirigami.Units.smallSpacing
+                        hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            root._lastWriteTime = Date.now();
+                            var cur = parseInt(root.powerProfile);
+                            var next = isNaN(cur) ? 0 : (cur + 1) % 4;
+                            executable.exec("razer-cli write power " + root.acState + " " + next);
+                            root.powerProfile = next.toString();
+                            refreshTimer.restart();
+                        }
+                        Rectangle {
+                            anchors.fill: parent; radius: 4
+                            color: profileMouse.containsMouse ? Qt.rgba(Kirigami.Theme.highlightColor.r, Kirigami.Theme.highlightColor.g, Kirigami.Theme.highlightColor.b, 0.15) : "transparent"
+                        }
+                        RowLayout {
+                            id: profileRow; anchors.fill: parent; anchors.leftMargin: Kirigami.Units.smallSpacing; anchors.rightMargin: Kirigami.Units.smallSpacing
+                            Kirigami.Icon { source: "system-run"; Layout.preferredWidth: 18; Layout.preferredHeight: 18 }
+                            QQC2.Label { text: "Profile"; font.weight: Font.Medium; font.pixelSize: Kirigami.Theme.smallFont.pixelSize }
+                            Item { Layout.fillWidth: true }
+                            QQC2.Label {
+                                text: { switch(powerProfile) { case "0": return "Balanced"; case "1": return "Gaming"; case "2": return "Creator"; case "3": return "Silent"; case "4": return "Custom"; default: return "--"; } }
+                                font.bold: true; font.pixelSize: Kirigami.Theme.smallFont.pixelSize; color: "#44d62c"
+                            }
+                            Kirigami.Icon { source: "go-next-symbolic"; Layout.preferredWidth: 12; Layout.preferredHeight: 12; opacity: 0.4 }
+                        }
+                    }
+
+                    Rectangle { Layout.fillWidth: true; Layout.leftMargin: Kirigami.Units.smallSpacing; Layout.rightMargin: Kirigami.Units.smallSpacing; implicitHeight: 1; color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.07) }
+
+                    // Fan
+                    MouseArea {
+                        id: fanMouse
+                        Layout.fillWidth: true
+                        implicitHeight: fanRow.implicitHeight + Kirigami.Units.smallSpacing
+                        hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            root._lastWriteTime = Date.now();
+                            var cur = parseInt(root.fanSpeed);
+                            var idx = 0;
+                            if (!isNaN(cur)) {
+                                for (var i = 0; i < root.fanPresets.length; i++) {
+                                    if (root.fanPresets[i] === cur) { idx = i; break; }
+                                }
+                            }
+                            var next = (idx + 1) % root.fanPresets.length;
+                            executable.exec("razer-cli write fan " + root.acState + " " + root.fanPresets[next]);
+                            root.fanSpeed = root.fanPresets[next].toString();
+                            refreshTimer.restart();
+                        }
+                        Rectangle {
+                            anchors.fill: parent; radius: 4
+                            color: fanMouse.containsMouse ? Qt.rgba(Kirigami.Theme.highlightColor.r, Kirigami.Theme.highlightColor.g, Kirigami.Theme.highlightColor.b, 0.15) : "transparent"
+                        }
+                        RowLayout {
+                            id: fanRow; anchors.fill: parent; anchors.leftMargin: Kirigami.Units.smallSpacing; anchors.rightMargin: Kirigami.Units.smallSpacing
+                            Kirigami.Icon { source: "speedometer-symbolic"; Layout.preferredWidth: 18; Layout.preferredHeight: 18 }
+                            QQC2.Label { text: "Fan"; font.weight: Font.Medium; font.pixelSize: Kirigami.Theme.smallFont.pixelSize }
+                            Item { Layout.fillWidth: true }
+                            QQC2.Label {
+                                text: fanSpeed === "--" ? "--" : (fanSpeed === "0" ? "Auto" : fanSpeed + " RPM")
+                                font.bold: true; font.pixelSize: Kirigami.Theme.smallFont.pixelSize
+                            }
+                            Kirigami.Icon { source: "go-next-symbolic"; Layout.preferredWidth: 12; Layout.preferredHeight: 12; opacity: 0.4 }
+                        }
+                    }
+
+                    Rectangle { Layout.fillWidth: true; Layout.leftMargin: Kirigami.Units.smallSpacing; Layout.rightMargin: Kirigami.Units.smallSpacing; implicitHeight: 1; color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.07) }
+
+                    // KB Brightness
+                    MouseArea {
+                        id: brightMouse
+                        Layout.fillWidth: true
+                        implicitHeight: brightRow.implicitHeight + Kirigami.Units.smallSpacing
+                        hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            root._lastWriteTime = Date.now();
+                            var steps = [0, 25, 50, 75, 100];
+                            var cur = parseInt(root.brightness);
+                            var idx = 0;
+                            for (var i = 0; i < steps.length; i++) { if (steps[i] === cur) { idx = i; break; } }
+                            var next = steps[(idx + 1) % steps.length];
+                            executable.exec("razer-cli write brightness " + root.acState + " " + next);
+                            root.brightness = next.toString();
+                            refreshTimer.restart();
+                        }
+                        Rectangle {
+                            anchors.fill: parent; radius: 4
+                            color: brightMouse.containsMouse ? Qt.rgba(Kirigami.Theme.highlightColor.r, Kirigami.Theme.highlightColor.g, Kirigami.Theme.highlightColor.b, 0.15) : "transparent"
+                        }
+                        RowLayout {
+                            id: brightRow; anchors.fill: parent; anchors.leftMargin: Kirigami.Units.smallSpacing; anchors.rightMargin: Kirigami.Units.smallSpacing
+                            Kirigami.Icon { source: "brightness-high-symbolic"; Layout.preferredWidth: 18; Layout.preferredHeight: 18 }
+                            QQC2.Label { text: "KB Brightness"; font.weight: Font.Medium; font.pixelSize: Kirigami.Theme.smallFont.pixelSize }
+                            Item { Layout.fillWidth: true }
+                            QQC2.Label {
+                                text: brightness === "0" ? "Off" : brightness !== "--" ? brightness + "%" : "--"
+                                font.bold: true; font.pixelSize: Kirigami.Theme.smallFont.pixelSize
+                                color: brightness === "0" ? Kirigami.Theme.disabledTextColor : Kirigami.Theme.textColor
+                            }
+                            Kirigami.Icon { source: "go-next-symbolic"; Layout.preferredWidth: 12; Layout.preferredHeight: 12; opacity: 0.4 }
+                        }
+                    }
+
+                    Rectangle { Layout.fillWidth: true; Layout.leftMargin: Kirigami.Units.smallSpacing; Layout.rightMargin: Kirigami.Units.smallSpacing; implicitHeight: 1; color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.07) }
+
+                    // Logo
+                    MouseArea {
+                        id: logoMouse
+                        Layout.fillWidth: true
+                        implicitHeight: logoRow.implicitHeight + Kirigami.Units.smallSpacing
+                        hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            root._lastWriteTime = Date.now();
+                            var cur = parseInt(root.logoMode);
+                            var next = isNaN(cur) ? 0 : (cur + 1) % 3;
+                            executable.exec("razer-cli write logo " + root.acState + " " + next);
+                            root.logoMode = next.toString();
+                            refreshTimer.restart();
+                        }
+                        Rectangle {
+                            anchors.fill: parent; radius: 4
+                            color: logoMouse.containsMouse ? Qt.rgba(Kirigami.Theme.highlightColor.r, Kirigami.Theme.highlightColor.g, Kirigami.Theme.highlightColor.b, 0.15) : "transparent"
+                        }
+                        RowLayout {
+                            id: logoRow; anchors.fill: parent; anchors.leftMargin: Kirigami.Units.smallSpacing; anchors.rightMargin: Kirigami.Units.smallSpacing
+                            Kirigami.Icon { source: "preferences-desktop-display-color"; Layout.preferredWidth: 18; Layout.preferredHeight: 18 }
+                            QQC2.Label { text: "Logo"; font.weight: Font.Medium; font.pixelSize: Kirigami.Theme.smallFont.pixelSize }
+                            Item { Layout.fillWidth: true }
+                            QQC2.Label {
+                                text: { switch(logoMode) { case "0": return "Off"; case "1": return "On"; case "2": return "Breathing"; default: return "--"; } }
+                                font.bold: true; font.pixelSize: Kirigami.Theme.smallFont.pixelSize
+                                color: logoMode === "0" ? Kirigami.Theme.disabledTextColor : "#44d62c"
+                            }
+                            Kirigami.Icon { source: "go-next-symbolic"; Layout.preferredWidth: 12; Layout.preferredHeight: 12; opacity: 0.4 }
+                        }
+                    }
+
+                    Rectangle { Layout.fillWidth: true; Layout.leftMargin: Kirigami.Units.smallSpacing; Layout.rightMargin: Kirigami.Units.smallSpacing; implicitHeight: 1; color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g, Kirigami.Theme.textColor.b, 0.07) }
+
+                    // Charge Limit
+                    MouseArea {
+                        id: bhoMouse
+                        Layout.fillWidth: true
+                        implicitHeight: bhoRow.implicitHeight + Kirigami.Units.smallSpacing
+                        hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            root._lastWriteTime = Date.now();
+                            var isOn = root.bhoStatus.indexOf("On") >= 0;
+                            if (isOn) { executable.exec("razer-cli write bho off"); root.bhoStatus = "Off"; }
+                            else { executable.exec("razer-cli write bho on 80"); root.bhoStatus = "On/80%"; }
+                            refreshTimer.restart();
+                        }
+                        Rectangle {
+                            anchors.fill: parent; radius: 4
+                            color: bhoMouse.containsMouse ? Qt.rgba(Kirigami.Theme.highlightColor.r, Kirigami.Theme.highlightColor.g, Kirigami.Theme.highlightColor.b, 0.15) : "transparent"
+                        }
+                        RowLayout {
+                            id: bhoRow; anchors.fill: parent; anchors.leftMargin: Kirigami.Units.smallSpacing; anchors.rightMargin: Kirigami.Units.smallSpacing
+                            Kirigami.Icon { source: "battery-good-charging-symbolic"; Layout.preferredWidth: 18; Layout.preferredHeight: 18 }
+                            QQC2.Label { text: "Charge Limit"; font.weight: Font.Medium; font.pixelSize: Kirigami.Theme.smallFont.pixelSize }
+                            Item { Layout.fillWidth: true }
+                            QQC2.Label {
+                                visible: bhoStatus.indexOf("On") >= 0
+                                text: {
+                                    var m = bhoStatus.match(/(\d+)/);
+                                    return m ? m[1] + "%" : "";
+                                }
+                                opacity: 0.6; font.pixelSize: Kirigami.Theme.smallFont.pixelSize
+                            }
+                            QQC2.Label {
+                                text: bhoStatus.indexOf("On") >= 0 ? "On" : "Off"
+                                font.bold: true; font.pixelSize: Kirigami.Theme.smallFont.pixelSize
+                                color: bhoStatus.indexOf("On") >= 0 ? "#44d62c" : Kirigami.Theme.disabledTextColor
+                            }
+                            Kirigami.Icon { source: "go-next-symbolic"; Layout.preferredWidth: 12; Layout.preferredHeight: 12; opacity: 0.4 }
+                        }
+                    }
                 }
             }
 
@@ -405,8 +571,7 @@ PlasmoidItem {
                 interval: 1000
                 onTriggered: sensorSource.connectSource(sensorSource.sensorCmd)
             }
-
-        }
+    }
     }
 
     // ===== APP LAUNCHER =====
@@ -457,8 +622,8 @@ PlasmoidItem {
             "c=$(cat /sys/class/power_supply/BAT0/current_now 2>/dev/null); " +
             "v=$(cat /sys/class/power_supply/BAT0/voltage_now 2>/dev/null); " +
             "[ -n \"$c\" ] && [ -n \"$v\" ] && [ \"$c\" -gt 0 ] && echo BAT_POWER_UW=$((c*v/1000000)); " +
-            "for d in /sys/class/powercap/intel-rapl:0/energy_uj /sys/class/powercap/amd-rapl:0/energy_uj; do " +
-            "  [ -r $d ] && echo RAPL_UJ=$(cat $d) && break; " +
+            "for d in /sys/class/powercap/intel-rapl*/intel-rapl:0/energy_uj /sys/class/powercap/intel-rapl:0/energy_uj /sys/devices/virtual/powercap/intel-rapl/intel-rapl:0/energy_uj /sys/class/powercap/amd-rapl*/amd-rapl:0/energy_uj /sys/class/powercap/amd-rapl:0/energy_uj; do " +
+            "  [ -r \"$d\" ] && echo RAPL_UJ=$(cat \"$d\" 2>/dev/null) && break; " +
             "done; " +
             "ac_on=$(cat /sys/class/power_supply/AC0/online 2>/dev/null || cat /sys/class/power_supply/ADP0/online 2>/dev/null || cat /sys/class/power_supply/ADP1/online 2>/dev/null); " +
             "_st=bat; [ \"$ac_on\" = \"1\" ] && _st=ac; " +
@@ -475,7 +640,8 @@ PlasmoidItem {
             "fi; " +
             "cn=$(grep -m1 \"model name\" /proc/cpuinfo | cut -d: -f2 | sed \"s/^ //; s/ with Radeon Graphics//; s/ w\\/.*//; s/ 16-Core Processor//\"); " +
             "echo CPU_NAME=$cn; " +
-            "ig=$(lspci 2>/dev/null | grep -iE \"VGA|Display|3D\" | grep -iv nvidia | head -1 | sed -E \"s/.*: //; s/ \\(rev .*//; s/Advanced Micro Devices, Inc\\. \\[AMD\\/ATI\\] //; s/Intel Corporation //\"); " +
+            "ig=$(grep -m1 \"model name\" /proc/cpuinfo | sed -nE \"s/.* (Radeon [0-9]+M).*/\\1/p\"); " +
+            "[ -z \"$ig\" ] && ig=$(lspci 2>/dev/null | grep -iE \"VGA|Display|3D\" | grep -iv nvidia | head -1 | sed -E \"s/.*: //; s/ \\(rev .*//; s/Advanced Micro Devices, Inc\\. \\[AMD\\/ATI\\] //; s/Intel Corporation //; s/.*\\[Radeon ([0-9]+M) \\/ [0-9]+M\\].*/Radeon \\1/; s/.*\\[Radeon ([0-9]+M)\\].*/Radeon \\1/\"); " +
             "dg=$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -1 | sed \"s/ Laptop GPU//\"); " +
             "[ -n \"$ig\" ] && echo IGPU_NAME=$ig; " +
             "[ -n \"$dg\" ] && echo DGPU_NAME=$dg; " +
