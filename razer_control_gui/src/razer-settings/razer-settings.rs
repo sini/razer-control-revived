@@ -34,6 +34,44 @@ fn send_data(opt: comms::DaemonCommand) -> Option<comms::DaemonResponse> {
     }
 }
 
+fn get_gpu_status() -> Option<(Vec<comms::GpuInfo>, bool, String, bool)> {
+    let response = send_data(comms::DaemonCommand::GetGpuStatus)?;
+    use comms::DaemonResponse::*;
+    match response {
+        GetGpuStatus { gpus, dgpu_runtime_pm, envycontrol_mode, envycontrol_available } => {
+            Some((gpus, dgpu_runtime_pm, envycontrol_mode, envycontrol_available))
+        }
+        response => {
+            println!("Instead of GetGpuStatus got {response:?}");
+            None
+        }
+    }
+}
+
+fn set_dgpu_runtime_pm(enabled: bool) -> Option<bool> {
+    let response = send_data(comms::DaemonCommand::SetDgpuRuntimePM { enabled })?;
+    use comms::DaemonResponse::*;
+    match response {
+        SetDgpuRuntimePM { result } => Some(result),
+        response => {
+            println!("Instead of SetDgpuRuntimePM got {response:?}");
+            None
+        }
+    }
+}
+
+fn set_gpu_mode(mode: &str) -> Option<(bool, String)> {
+    let response = send_data(comms::DaemonCommand::SetGpuMode { mode: mode.to_string() })?;
+    use comms::DaemonResponse::*;
+    match response {
+        SetGpuMode { result, message } => Some((result, message)),
+        response => {
+            println!("Instead of SetGpuMode got {response:?}");
+            None
+        }
+    }
+}
+
 fn get_device_name() -> Option<String> {
     let response = send_data(comms::DaemonCommand::GetDeviceName)?;
     use comms::DaemonResponse::*;
@@ -287,16 +325,7 @@ fn get_gpu_temperature() -> Option<f64> {
     None
 }
 
-/// Read current fan speed from daemon
-fn get_current_fan_speed(ac: bool) -> Option<i32> {
-    let ac = if ac { 1 } else { 0 };
-    let response = send_data(comms::DaemonCommand::GetFanSpeed { ac })?;
-    use comms::DaemonResponse::*;
-    match response {
-        GetFanSpeed { rpm } => Some(rpm),
-        _ => None
-    }
-}
+
 
 /// Read system/CPU power consumption from RAPL (supports AMD and Intel)
 fn get_system_power() -> Option<f64> {
@@ -571,6 +600,7 @@ fn create_system_monitor(shared_state: tray::SharedSensorState) -> gtk::Box {
     main_box.set_margin_top(4);
     main_box.set_margin_bottom(4);
     main_box.add_css_class("toolbar");
+    main_box.add_css_class("monitor-bar");
 
     // Helper: create a full-width monitor row (name + temp on left, power · util% on right)
     fn make_row(label_text: &str) -> (gtk::Box, gtk::Label, gtk::Label, gtk::Label, gtk::Label) {
@@ -613,9 +643,32 @@ fn create_system_monitor(shared_state: tray::SharedSensorState) -> gtk::Box {
         (row, temp, power, dot, util)
     }
 
-    let (cpu_row, cpu_temp_l, cpu_power_l, cpu_dot, cpu_util_l) = make_row("CPU");
-    let (igpu_row, igpu_temp_l, igpu_power_l, igpu_dot, igpu_util_l) = make_row("iGPU");
-    let (dgpu_row, dgpu_temp_l, dgpu_power_l, dgpu_dot, dgpu_util_l) = make_row("dGPU");
+    let cpu_name = util::get_cpu_name().unwrap_or_else(|| "CPU".to_string());
+    // Shorten extremely long CPU names (e.g. "AMD Ryzen 9 7945HX with Radeon Graphics" -> "AMD Ryzen 9 7945HX")
+    let cpu_label = cpu_name.replace(" with Radeon Graphics", "").replace(" 16-Core Processor", "");
+
+    // Fetch detected GPUs to find names
+    let mut igpu_label = "iGPU".to_string();
+    let mut dgpu_label = "dGPU".to_string();
+    
+    if let Some((gpu_list, _, _, _)) = get_gpu_status() {
+        for gpu_info in gpu_list {
+           let name = gpu_info.name;
+           // Heuristic: NVIDIA/Discrete usually dGPU; AMD/Intel usually iGPU (unless discrete)
+           if name.to_uppercase().contains("NVIDIA") {
+               dgpu_label = name.replace(" Laptop GPU", "");
+           } else if name.to_uppercase().contains("AMD") || name.to_uppercase().contains("INTEL") {
+               // Assume the first non-NVIDIA is iGPU
+               if igpu_label == "iGPU" {
+                   igpu_label = name.replace(" Radeon Graphics", "");
+               }
+           }
+        }
+    }
+
+    let (cpu_row, cpu_temp_l, cpu_power_l, cpu_dot, cpu_util_l) = make_row(&cpu_label);
+    let (igpu_row, igpu_temp_l, igpu_power_l, igpu_dot, igpu_util_l) = make_row(&igpu_label);
+    let (dgpu_row, dgpu_temp_l, dgpu_power_l, dgpu_dot, dgpu_util_l) = make_row(&dgpu_label);
 
     // Battery + Fan row (status + watts on left, fan on right)
     let bottom_row = gtk::Box::new(gtk::Orientation::Horizontal, 6);
@@ -659,7 +712,7 @@ fn create_system_monitor(shared_state: tray::SharedSensorState) -> gtk::Box {
         let dgpu_temp = get_gpu_temperature();
         let on_ac = check_if_running_on_ac_power();
         let ac = on_ac.unwrap_or(true);
-        let fan = get_current_fan_speed(ac);
+        let fan = get_fan_speed(ac);
         let battery_pct = get_battery_percentage();
         let battery_status = get_battery_status();
         let battery_power = get_battery_power();
@@ -680,7 +733,7 @@ fn create_system_monitor(shared_state: tray::SharedSensorState) -> gtk::Box {
             None => cpu_power_l.set_visible(false),
         }
         match cpu_util {
-            Some(u) => { cpu_util_l.set_text(&format!("{}%", u)); cpu_util_l.set_visible(true); cpu_dot.set_visible(true); }
+            Some(u) => { cpu_util_l.set_text(&format!("{}%", u)); cpu_util_l.set_visible(true); cpu_dot.set_visible(sys_power.is_some()); }
             None => { cpu_util_l.set_visible(false); cpu_dot.set_visible(false); }
         }
 
@@ -697,7 +750,7 @@ fn create_system_monitor(shared_state: tray::SharedSensorState) -> gtk::Box {
                 None => igpu_power_l.set_visible(false),
             }
             match igpu_util {
-                Some(u) => { igpu_util_l.set_text(&format!("{}%", u)); igpu_util_l.set_visible(true); igpu_dot.set_visible(true); }
+                Some(u) => { igpu_util_l.set_text(&format!("{}%", u)); igpu_util_l.set_visible(true); igpu_dot.set_visible(igpu_pwr.is_some()); }
                 None => { igpu_util_l.set_visible(false); igpu_dot.set_visible(false); }
             }
         }
@@ -712,7 +765,7 @@ fn create_system_monitor(shared_state: tray::SharedSensorState) -> gtk::Box {
             None => dgpu_power_l.set_visible(false),
         }
         match dgpu_util {
-            Some(u) => { dgpu_util_l.set_text(&format!("{}%", u)); dgpu_util_l.set_visible(true); dgpu_dot.set_visible(true); }
+            Some(u) => { dgpu_util_l.set_text(&format!("{}%", u)); dgpu_util_l.set_visible(true); dgpu_dot.set_visible(dgpu_pwr.is_some()); }
             None => { dgpu_util_l.set_visible(false); dgpu_dot.set_visible(false); }
         }
 
@@ -938,6 +991,8 @@ fn main() {
         let page = view_stack.add_titled(&battery_page.page, Some("Battery"), "Battery");
         page.set_icon_name(Some("battery-symbolic"));
 
+        // (GPU sections are now part of the Performance page)
+
         // About page
         let about_page = make_about_page(device.clone());
         let page = view_stack.add_titled(&about_page.page, Some("About"), "About");
@@ -949,7 +1004,10 @@ fn main() {
         let monitor = create_system_monitor(Arc::clone(&shared_state_for_activate));
         content_box.append(&monitor);
 
-        window.set_content(Some(&content_box));
+        let toast_overlay = adw::ToastOverlay::new();
+        toast_overlay.set_child(Some(&content_box));
+
+        window.set_content(Some(&toast_overlay));
         window.present();
 
         if check_first_run() {
@@ -1077,15 +1135,8 @@ fn make_performance_page(device: SupportedDevice) -> SettingsPage {
         }
     };
 
-    // Toggle callback
+    // Toggle callback — hook the actual toggle buttons to refresh page state
     {
-        let refresh = refresh.clone();
-        toggle_box.connect_notify_local(None, move |_box, _pspec| {
-            // The linked toggle buttons are children; just refresh whenever anything changes.
-        });
-        // We need to hook into the actual toggle buttons.  They are children of toggle_box.
-        // Since make_profile_toggle already updates is_ac, we connect to is_ac changes indirectly
-        // by connecting to the toggle buttons (first two children).
         let first_child = toggle_box.first_child();
         if let Some(ac_btn) = first_child {
             if let Ok(tb) = ac_btn.downcast::<gtk::ToggleButton>() {
@@ -1204,11 +1255,192 @@ fn make_performance_page(device: SupportedDevice) -> SettingsPage {
         ));
     }
 
-    // Live-sync: poll daemon every 2s so widget changes appear in GUI
+    // -----------------------------------------------------------------------
+    // GPU sections (merged from former GPU page)
+    // -----------------------------------------------------------------------
+    let gpu_refreshing = Rc::new(Cell::new(false));
+    let gpu_cooldown = Rc::new(Cell::new(false));
+    let gpu_status = get_gpu_status();
+
+    // --- Detected GPUs ---
+    let gpu_section = settings_page.add_section(Some("Detected GPUs"));
+    let gpu_rows: Vec<adw::ActionRow> = if let Some((ref gpus, _, _, _)) = gpu_status {
+        gpus.iter().map(|gpu| {
+            let row = adw::ActionRow::new();
+            row.set_title(&gpu.name);
+            let type_label = if gpu.gpu_type == "dgpu" { "Discrete" } else { "Integrated" };
+            row.set_subtitle(&format!("{} \u{00B7} {} \u{00B7} {} \u{00B7} {}", type_label, gpu.pci_slot, gpu.driver, gpu.runtime_status));
+            gpu_section.add_row(&row);
+            row
+        }).collect()
+    } else {
+        let row = adw::ActionRow::new();
+        row.set_title("No GPUs detected");
+        row.set_subtitle("Could not query GPU information from daemon");
+        gpu_section.add_row(&row);
+        vec![row]
+    };
+
+    // --- dGPU Runtime Power ---
+    let has_dgpu = gpu_status.as_ref().map_or(false, |(gpus, _, _, _)| gpus.iter().any(|g| g.gpu_type == "dgpu"));
+    let dgpu_rpm_active = gpu_status.as_ref().map_or(false, |(_, rpm, _, _)| *rpm);
+
+    let rpm_section = settings_page.add_section(Some("dGPU Runtime Power"));
+    let rpm_switch = make_switch_row(
+        "Suspend dGPU",
+        "Allow the discrete GPU to power down when idle (instant, no reboot)",
+        dgpu_rpm_active,
+    );
+    rpm_section.add_row(&rpm_switch);
+
+    if !has_dgpu {
+        rpm_switch.set_sensitive(false);
+        rpm_switch.set_subtitle("No discrete GPU detected");
+    }
+
+    // dGPU switch callback — with cooldown to prevent live-sync from reverting
+    {
+        let gpu_refreshing = gpu_refreshing.clone();
+        let gpu_cooldown = gpu_cooldown.clone();
+        rpm_switch.connect_active_notify(move |sw| {
+            if gpu_refreshing.get() { return; }
+            set_dgpu_runtime_pm(sw.is_active());
+            // Set cooldown so the live-sync skips the next few polls
+            gpu_cooldown.set(true);
+            let cd = gpu_cooldown.clone();
+            glib::timeout_add_local_once(Duration::from_secs(4), move || {
+                cd.set(false);
+            });
+        });
+    }
+
+    // --- envycontrol GPU Mode ---
+    let ec_available = gpu_status.as_ref().map_or(false, |(_, _, _, avail)| *avail);
+    let ec_mode = gpu_status.as_ref().map_or("unknown".to_string(), |(_, _, mode, _)| mode.clone());
+
+    let ec_section = settings_page.add_section(Some("GPU Mode (envycontrol)"));
+
+    if ec_available {
+        let mode_idx = match ec_mode.as_str() {
+            "hybrid" => 0u32,
+            "integrated" => 1,
+            "nvidia" => 2,
+            _ => 0,
+        };
+
+        let mode_combo = make_combo_row(
+            "GPU Mode",
+            &gpu_mode_description(mode_idx),
+            &["Hybrid", "Integrated", "NVIDIA Only"],
+            mode_idx,
+        );
+        ec_section.add_row(&mode_combo);
+
+        let info_label = gtk::Label::new(Some("Changing GPU mode requires logout to take effect."));
+        info_label.set_wrap(true);
+        info_label.add_css_class("dim-label");
+        info_label.add_css_class("caption");
+        info_label.set_margin_top(4);
+        info_label.set_margin_bottom(8);
+        info_label.set_margin_start(12);
+        info_label.set_margin_end(12);
+        ec_section.add_row(&info_label);
+
+        // Auto-apply callback on selection change
+        {
+            let mode_combo = mode_combo.clone();
+            let gpu_refreshing = gpu_refreshing.clone();
+            
+            // Capture a weak reference or solve the root access differently. 
+            // We can't capture the widget itself and use it easily if we also clone it? 
+            // construct logic inside.
+            
+            mode_combo.clone().connect_selected_notify(move |c| {
+                // Update subtitle
+                c.set_subtitle(gpu_mode_description(c.selected()));
+
+                if gpu_refreshing.get() { return; }
+
+                let mode_str = match c.selected() {
+                    0 => "hybrid",
+                    1 => "integrated",
+                    2 => "nvidia",
+                    _ => "hybrid",
+                };
+                let mode_owned = mode_str.to_string();
+
+                // Attempt to find toast overlay
+                let overlay_ref: Option<adw::ToastOverlay> = c.root()
+                    .and_then(|r| r.downcast::<adw::ApplicationWindow>().ok())
+                    .and_then(|w| w.content())
+                    .and_then(|c| c.downcast::<adw::ToastOverlay>().ok());
+
+                // Perform the action
+                let (msg, timeout) = match set_gpu_mode(&mode_owned) {
+                    Some((true, _)) => (
+                        format!("GPU mode set to '{}' \u{2014} log out to apply", mode_owned),
+                        3,
+                    ),
+                    Some((false, msg)) => (
+                        format!("Failed: {}", msg),
+                        4,
+                    ),
+                    None => (
+                        "Failed to communicate with daemon".to_string(),
+                        4,
+                    ),
+                };
+
+                // Show toast
+                if let Some(ref o) = overlay_ref {
+                    let toast = adw::Toast::new(&msg);
+                    toast.set_timeout(timeout);
+                    o.add_toast(toast);
+                } else {
+                    // Fallback to stderr if UI not ready (unlikely)
+                    eprintln!("{}", msg);
+                }
+            });
+        }
+    } else {
+        let info_label = gtk::Label::new(Some("envycontrol is not installed. Install it for persistent GPU mode switching."));
+        info_label.set_wrap(true);
+        info_label.add_css_class("dim-label");
+        info_label.set_margin_top(12);
+        info_label.set_margin_bottom(12);
+        info_label.set_margin_start(12);
+        info_label.set_margin_end(12);
+        ec_section.add_row(&info_label);
+    }
+
+    // -----------------------------------------------------------------------
+    // Combined live-sync: poll performance + GPU every 2s
+    // -----------------------------------------------------------------------
     {
         let refresh = refresh.clone();
+        let gpu_refreshing = gpu_refreshing.clone();
+        let gpu_cooldown = gpu_cooldown.clone();
+        let rpm_switch = rpm_switch.clone();
+        let gpu_rows = gpu_rows.clone();
         glib::timeout_add_local(Duration::from_secs(2), move || {
+            // Performance refresh
             refresh();
+
+            // GPU refresh (skip if user just toggled the switch)
+            if !gpu_cooldown.get() {
+                if let Some((gpus, dgpu_rpm, _, _)) = get_gpu_status() {
+                    gpu_refreshing.set(true);
+                    rpm_switch.set_active(dgpu_rpm);
+                    for (i, row) in gpu_rows.iter().enumerate() {
+                        if let Some(gpu) = gpus.get(i) {
+                            let type_label = if gpu.gpu_type == "dgpu" { "Discrete" } else { "Integrated" };
+                            row.set_subtitle(&format!("{} \u{00B7} {} \u{00B7} {} \u{00B7} {}", type_label, gpu.pci_slot, gpu.driver, gpu.runtime_status));
+                        }
+                    }
+                    gpu_refreshing.set(false);
+                }
+            }
+
             glib::ControlFlow::Continue
         });
     }
@@ -1334,7 +1566,7 @@ fn make_lighting_page(device: SupportedDevice) -> SettingsPage {
         let effect_ref = effect_combo.clone();
         let color1_btn = color1.button.clone();
         let color2_btn = color2.button.clone();
-        apply_button.connect_clicked(move |_| {
+        apply_button.connect_clicked(move |btn| {
             let c1 = color1_btn.rgba();
             let red = (c1.red() * 255.0) as u8;
             let green = (c1.green() * 255.0) as u8;
@@ -1345,12 +1577,29 @@ fn make_lighting_page(device: SupportedDevice) -> SettingsPage {
             let green2 = (c2.green() * 255.0) as u8;
             let blue2 = (c2.blue() * 255.0) as u8;
 
-            match effect_ref.selected() {
-                0 => { set_effect("static", vec![red, green, blue]); },
-                1 => { set_effect("static_gradient", vec![red, green, blue, red2, green2, blue2]); },
-                2 => { set_effect("wave_gradient", vec![red, green, blue, red2, green2, blue2]); },
-                3 => { set_effect("breathing_single", vec![red, green, blue, 10]); },
-                _ => {}
+            let ok = match effect_ref.selected() {
+                0 => set_effect("static", vec![red, green, blue]),
+                1 => set_effect("static_gradient", vec![red, green, blue, red2, green2, blue2]),
+                2 => set_effect("wave_gradient", vec![red, green, blue, red2, green2, blue2]),
+                3 => set_effect("breathing_single", vec![red, green, blue, 10]),
+                _ => None,
+            };
+
+            // Show toast feedback
+            if let Some(root) = btn.root() {
+                if let Some(window) = root.downcast_ref::<adw::ApplicationWindow>() {
+                    if let Some(child) = window.content() {
+                        if let Ok(overlay) = child.downcast::<adw::ToastOverlay>() {
+                            let toast = if ok == Some(true) {
+                                adw::Toast::new("Effect applied")
+                            } else {
+                                adw::Toast::new("Failed to apply effect")
+                            };
+                            toast.set_timeout(2);
+                            overlay.add_toast(toast);
+                        }
+                    }
+                }
             }
         });
     }
@@ -1510,18 +1759,27 @@ fn make_battery_page() -> SettingsPage {
             });
         }
     } else {
-        let section = page.add_section(Some("Battery Health"));
-        let info_label = gtk::Label::new(Some("Battery health optimizer is not available on this device."));
-        info_label.set_wrap(true);
-        info_label.add_css_class("dim-label");
-        info_label.set_margin_top(12);
-        info_label.set_margin_bottom(12);
-        info_label.set_margin_start(12);
-        info_label.set_margin_end(12);
-        section.add_row(&info_label);
+        let status = adw::StatusPage::new();
+        status.set_icon_name(Some("battery-symbolic"));
+        status.set_title("Not Available");
+        status.set_description(Some("Battery health optimizer is not supported on this device."));
+        page.page.add(&adw::PreferencesGroup::new());
+        let section = page.add_section(None);
+        section.add_row(&status);
     }
 
     page
+}
+
+
+
+fn gpu_mode_description(index: u32) -> &'static str {
+    match index {
+        0 => "Both GPUs active, apps choose which to use",
+        1 => "Only integrated GPU, maximum battery life",
+        2 => "Only NVIDIA GPU, maximum performance",
+        _ => "",
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -1539,7 +1797,7 @@ fn make_about_page(device: SupportedDevice) -> SettingsPage {
     let row = SettingsRow::new("Name", &app_name);
     section.add_row(&row.row);
 
-    let version_label = gtk::Label::new(Some("v0.2.6"));
+    let version_label = gtk::Label::new(Some(&format!("v{}", env!("CARGO_PKG_VERSION"))));
     let row = SettingsRow::new("Version", &version_label);
     section.add_row(&row.row);
 

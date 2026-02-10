@@ -10,8 +10,11 @@ PlasmoidItem {
 
     // --- Sensor values ---
     property string cpuTemp: "--"
+    property string cpuName: "CPU"
     property string dgpuTemp: "--"
+    property string dgpuName: "dGPU"
     property string igpuTemp: "--"
+    property string igpuName: "iGPU"
     property string fanSpeed: "--"
     property string batteryPct: "--"
     property string acPower: "--"
@@ -23,6 +26,9 @@ PlasmoidItem {
     property string cpuPower: "--"
     property string cpuUtil: "--"
     property string batteryWatts: "--"
+    property string cpuFreq: "--"
+    property string igpuFreq: "--"
+    property string dgpuFreq: "--"
 
     // RAPL tracking
     property real _lastRaplUj: 0
@@ -144,18 +150,15 @@ PlasmoidItem {
                     Layout.fillWidth: true
                     spacing: Kirigami.Units.smallSpacing
                     Kirigami.Icon { source: "cpu-symbolic"; Layout.preferredWidth: 16; Layout.preferredHeight: 16 }
-                    QQC2.Label { text: "CPU"; Layout.preferredWidth: 34 }
+                    QQC2.Label { text: cpuName; Layout.fillWidth: true; elide: Text.ElideRight; font.pixelSize: Kirigami.Theme.smallFont.pixelSize * 0.9; opacity: 0.8 }
                     QQC2.Label {
                         text: cpuTemp !== "--" ? cpuTemp + "\u00B0C" : ""
-                        font.bold: true
-                        Layout.preferredWidth: 44
+                        font.bold: true; Layout.preferredWidth: 42; horizontalAlignment: Text.AlignRight
                         color: cpuTemp !== "--" ? (parseFloat(cpuTemp) > 90 ? "#ff4444" : parseFloat(cpuTemp) > 75 ? "#ffaa00" : "#44d62c") : Kirigami.Theme.textColor
-                        visible: cpuTemp !== "--"
                     }
-                    Item { Layout.fillWidth: true }
-                    QQC2.Label { text: cpuPower + " W"; visible: cpuPower !== "--"; opacity: 0.8 }
-                    QQC2.Label { text: "\u00b7"; opacity: 0.3; visible: cpuPower !== "--" && cpuUtil !== "--" }
-                    QQC2.Label { text: cpuUtil + "%"; visible: cpuUtil !== "--"; opacity: 0.7 }
+                    QQC2.Label { text: cpuFreq !== "--" ? cpuFreq + " GHz" : ""; Layout.preferredWidth: 56; horizontalAlignment: Text.AlignRight; opacity: 0.7 }
+                    QQC2.Label { text: cpuPower !== "--" ? cpuPower + " W" : ""; Layout.preferredWidth: 46; horizontalAlignment: Text.AlignRight; opacity: 0.8 }
+                    QQC2.Label { text: cpuUtil !== "--" ? cpuUtil + "%" : ""; Layout.preferredWidth: 28; horizontalAlignment: Text.AlignRight; opacity: 0.7 }
                 }
 
                 // iGPU
@@ -164,18 +167,15 @@ PlasmoidItem {
                     spacing: Kirigami.Units.smallSpacing
                     visible: igpuTemp !== "--" || igpuPower !== "--"
                     Kirigami.Icon { source: "video-display-symbolic"; Layout.preferredWidth: 16; Layout.preferredHeight: 16 }
-                    QQC2.Label { text: "iGPU"; Layout.preferredWidth: 34 }
+                    QQC2.Label { text: igpuName; Layout.fillWidth: true; elide: Text.ElideRight; font.pixelSize: Kirigami.Theme.smallFont.pixelSize * 0.9; opacity: 0.8 }
                     QQC2.Label {
                         text: igpuTemp !== "--" ? igpuTemp + "\u00B0C" : ""
-                        font.bold: true
-                        Layout.preferredWidth: 44
+                        font.bold: true; Layout.preferredWidth: 42; horizontalAlignment: Text.AlignRight
                         color: igpuTemp !== "--" ? (parseFloat(igpuTemp) > 90 ? "#ff4444" : parseFloat(igpuTemp) > 75 ? "#ffaa00" : "#44d62c") : Kirigami.Theme.textColor
-                        visible: igpuTemp !== "--"
                     }
-                    Item { Layout.fillWidth: true }
-                    QQC2.Label { text: igpuPower + " W"; visible: igpuPower !== "--"; opacity: 0.8 }
-                    QQC2.Label { text: "\u00b7"; opacity: 0.3; visible: igpuPower !== "--" && igpuUtil !== "--" }
-                    QQC2.Label { text: igpuUtil + "%"; visible: igpuUtil !== "--"; opacity: 0.7 }
+                    QQC2.Label { text: igpuFreq !== "--" ? igpuFreq + " MHz" : ""; Layout.preferredWidth: 56; horizontalAlignment: Text.AlignRight; opacity: 0.7 }
+                    QQC2.Label { text: igpuPower !== "--" ? igpuPower + " W" : ""; Layout.preferredWidth: 46; horizontalAlignment: Text.AlignRight; opacity: 0.8 }
+                    QQC2.Label { text: igpuUtil !== "--" ? igpuUtil + "%" : ""; Layout.preferredWidth: 28; horizontalAlignment: Text.AlignRight; opacity: 0.7 }
                 }
 
                 // dGPU
@@ -183,21 +183,15 @@ PlasmoidItem {
                     Layout.fillWidth: true
                     spacing: Kirigami.Units.smallSpacing
                     Kirigami.Icon { source: "video-display-symbolic"; Layout.preferredWidth: 16; Layout.preferredHeight: 16 }
-                    QQC2.Label { text: "dGPU"; Layout.preferredWidth: 34 }
+                    QQC2.Label { text: dgpuName; Layout.fillWidth: true; elide: Text.ElideRight; font.pixelSize: Kirigami.Theme.smallFont.pixelSize * 0.9; opacity: 0.8 }
                     QQC2.Label {
                         text: dgpuTemp !== "--" ? dgpuTemp + "\u00B0C" : "Off"
-                        font.bold: true
-                        Layout.preferredWidth: 44
+                        font.bold: true; Layout.preferredWidth: 42; horizontalAlignment: Text.AlignRight
                         color: dgpuTemp !== "--" ? (parseFloat(dgpuTemp) > 85 ? "#ff4444" : parseFloat(dgpuTemp) > 70 ? "#ffaa00" : "#44d62c") : Kirigami.Theme.disabledTextColor
                     }
-                    Item { Layout.fillWidth: true }
-                    QQC2.Label {
-                        text: dgpuPower !== "--" ? dgpuPower + " W" : ""
-                        visible: dgpuPower !== "--"
-                        opacity: 0.8
-                    }
-                    QQC2.Label { text: "\u00b7"; opacity: 0.3; visible: dgpuPower !== "--" && dgpuUtil !== "--" }
-                    QQC2.Label { text: dgpuUtil + "%"; visible: dgpuUtil !== "--"; opacity: 0.7 }
+                    QQC2.Label { text: dgpuFreq !== "--" ? dgpuFreq + " MHz" : ""; Layout.preferredWidth: 56; horizontalAlignment: Text.AlignRight; opacity: 0.7 }
+                    QQC2.Label { text: dgpuPower !== "--" ? dgpuPower + " W" : ""; Layout.preferredWidth: 46; horizontalAlignment: Text.AlignRight; opacity: 0.8 }
+                    QQC2.Label { text: dgpuUtil !== "--" ? dgpuUtil + "%" : ""; Layout.preferredWidth: 28; horizontalAlignment: Text.AlignRight; opacity: 0.7 }
                 }
 
 
@@ -478,7 +472,16 @@ PlasmoidItem {
             "  echo BHO=On/$thr%; " +
             "elif echo $bho | grep -qi off; then " +
             "  echo BHO=Off; " +
-            "fi" +
+            "fi; " +
+            "cn=$(grep -m1 \"model name\" /proc/cpuinfo | cut -d: -f2 | sed \"s/^ //; s/ with Radeon Graphics//; s/ w\\/.*//; s/ 16-Core Processor//\"); " +
+            "echo CPU_NAME=$cn; " +
+            "ig=$(lspci 2>/dev/null | grep -iE \"VGA|Display|3D\" | grep -iv nvidia | head -1 | sed -E \"s/.*: //; s/ \\(rev .*//; s/Advanced Micro Devices, Inc\\. \\[AMD\\/ATI\\] //; s/Intel Corporation //\"); " +
+            "dg=$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -1 | sed \"s/ Laptop GPU//\"); " +
+            "[ -n \"$ig\" ] && echo IGPU_NAME=$ig; " +
+            "[ -n \"$dg\" ] && echo DGPU_NAME=$dg; " +
+            "echo CPU_FREQ=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq 2>/dev/null); " +
+            "echo IGPU_FREQ=$(cat /sys/class/drm/card*/device/pp_dpm_sclk 2>/dev/null | grep \"\\*\" | sed -E \"s/.*: ([0-9]+)Mhz.*/\\1/\"); " +
+            "echo DGPU_FREQ=$(nvidia-smi --query-gpu=clocks.current.graphics --format=csv,noheader,nounits 2>/dev/null); " +
             "'"
 
         onNewData: function(sourceName, data) {
@@ -581,6 +584,25 @@ PlasmoidItem {
                             root._lastCpuIdle = idle;
                             root._lastCpuTotal = total;
                         }
+                        break;
+                    case "CPU_NAME":
+                        if (val !== "") cpuName = val;
+                        break;
+                    case "IGPU_NAME":
+                        if (val !== "") igpuName = val;
+                        break;
+                    case "DGPU_NAME":
+                        if (val !== "") dgpuName = val;
+                        break;
+                    case "CPU_FREQ":
+                        var cf = parseFloat(val);
+                        if (!isNaN(cf)) cpuFreq = (cf / 1000000).toFixed(1);
+                        break;
+                    case "IGPU_FREQ":
+                        if (!isNaN(parseInt(val))) igpuFreq = parseInt(val).toString();
+                        break;
+                    case "DGPU_FREQ":
+                        if (!isNaN(parseInt(val))) dgpuFreq = parseInt(val).toString();
                         break;
                 }
             }

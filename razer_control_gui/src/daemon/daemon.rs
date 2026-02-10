@@ -16,6 +16,7 @@ mod comms;
 mod config;
 mod kbd;
 mod device;
+mod gpu;
 mod battery;
 mod dbus_mutter_displayconfig;
 mod dbus_mutter_idlemonitor;
@@ -317,6 +318,36 @@ fn handle_data(mut stream: UnixStream) {
 }
 
 pub fn process_client_request(cmd: comms::DaemonCommand) -> Option<comms::DaemonResponse> {
+    // GPU commands don't need DEV_MANAGER, handle them first
+    match &cmd {
+        comms::DaemonCommand::GetGpuStatus => {
+            let gpus = gpu::discover_gpus();
+            let dgpu_rpm = gpu::get_dgpu_runtime_pm();
+            let ec_available = gpu::envycontrol_available();
+            let ec_mode = if ec_available {
+                gpu::get_envycontrol_mode()
+            } else {
+                "unknown".to_string()
+            };
+            return Some(comms::DaemonResponse::GetGpuStatus {
+                gpus,
+                dgpu_runtime_pm: dgpu_rpm,
+                envycontrol_mode: ec_mode,
+                envycontrol_available: ec_available,
+            });
+        }
+        comms::DaemonCommand::SetDgpuRuntimePM { enabled } => {
+            return Some(comms::DaemonResponse::SetDgpuRuntimePM {
+                result: gpu::set_dgpu_runtime_pm(*enabled),
+            });
+        }
+        comms::DaemonCommand::SetGpuMode { mode } => {
+            let (ok, msg) = gpu::set_envycontrol_mode(mode);
+            return Some(comms::DaemonResponse::SetGpuMode { result: ok, message: msg });
+        }
+        _ => {}
+    }
+
     if let Ok(mut d) = DEV_MANAGER.lock() {
         return match cmd {
             comms::DaemonCommand::SetPowerMode { ac, pwr, cpu, gpu } if ac < 2 => {

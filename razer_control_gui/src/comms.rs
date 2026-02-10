@@ -6,6 +6,15 @@ use std::os::unix::fs::PermissionsExt;
 /// Razer laptop control socket path
 pub const SOCKET_PATH: &str = "/tmp/razercontrol-socket";
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct GpuInfo {
+    pub name: String,
+    pub pci_slot: String,
+    pub driver: String,
+    pub gpu_type: String,
+    pub runtime_status: String,
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 /// Represents data sent TO the daemon
 pub enum DaemonCommand {
@@ -30,6 +39,9 @@ pub enum DaemonCommand {
     GetDeviceName,
     GetActualFanRpm,
     GetStandardEffect,
+    GetGpuStatus,
+    SetDgpuRuntimePM { enabled: bool },
+    SetGpuMode { mode: String },
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -57,6 +69,14 @@ pub enum DaemonResponse {
     GetDeviceName { name: String },
     GetActualFanRpm { rpm: i32 },
     GetStandardEffect { effect: u8, params: Vec<u8> },
+    GetGpuStatus {
+        gpus: Vec<GpuInfo>,
+        dgpu_runtime_pm: bool,
+        envycontrol_mode: String,
+        envycontrol_available: bool,
+    },
+    SetDgpuRuntimePM { result: bool },
+    SetGpuMode { result: bool, message: String },
 }
 
 #[allow(dead_code)]

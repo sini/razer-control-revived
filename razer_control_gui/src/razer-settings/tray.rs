@@ -52,18 +52,39 @@ impl SensorState {
     fn format_lines(&self) -> String {
         let mut lines: Vec<String> = Vec::new();
 
-        if let Some(t) = self.cpu_temp {
-            let util_str = self.cpu_util.map_or(String::new(), |u| format!(" \u{00B7} {}%", u));
-            lines.push(format!("CPU: {:.0}\u{00B0}C{}", t, util_str));
+        // CPU: merge temp, power, util into one line
+        {
+            let mut parts: Vec<String> = Vec::new();
+            if let Some(t) = self.cpu_temp { parts.push(format!("{:.0}\u{00B0}C", t)); }
+            if let Some(w) = self.system_power { parts.push(format!("{:.1}W", w)); }
+            if let Some(u) = self.cpu_util { parts.push(format!("{}%", u)); }
+            if !parts.is_empty() {
+                lines.push(format!("CPU: {}", parts.join(" \u{00B7} ")));
+            }
         }
-        if let Some(t) = self.igpu_temp {
-            let util_str = self.igpu_util.map_or(String::new(), |u| format!(" \u{00B7} {}%", u));
-            lines.push(format!("iGPU: {:.0}\u{00B0}C{}", t, util_str));
+
+        // iGPU: merge temp, power, util
+        {
+            let mut parts: Vec<String> = Vec::new();
+            if let Some(t) = self.igpu_temp { parts.push(format!("{:.0}\u{00B0}C", t)); }
+            if let Some(w) = self.igpu_power { parts.push(format!("{:.1}W", w)); }
+            if let Some(u) = self.igpu_util { parts.push(format!("{}%", u)); }
+            if !parts.is_empty() {
+                lines.push(format!("iGPU: {}", parts.join(" \u{00B7} ")));
+            }
         }
-        if let Some(t) = self.dgpu_temp {
-            let util_str = self.dgpu_util.map_or(String::new(), |u| format!(" \u{00B7} {}%", u));
-            lines.push(format!("dGPU: {:.0}\u{00B0}C{}", t, util_str));
+
+        // dGPU: merge temp, power, util
+        {
+            let mut parts: Vec<String> = Vec::new();
+            if let Some(t) = self.dgpu_temp { parts.push(format!("{:.0}\u{00B0}C", t)); }
+            if let Some(w) = self.dgpu_power { parts.push(format!("{:.1}W", w)); }
+            if let Some(u) = self.dgpu_util { parts.push(format!("{}%", u)); }
+            if !parts.is_empty() {
+                lines.push(format!("dGPU: {}", parts.join(" \u{00B7} ")));
+            }
         }
+
         if let Some(rpm) = self.fan_speed {
             if rpm == 0 {
                 lines.push("Fan: Auto".into());
@@ -71,15 +92,7 @@ impl SensorState {
                 lines.push(format!("Fan: {} RPM", rpm));
             }
         }
-        if let Some(w) = self.system_power {
-            lines.push(format!("CPU: {:.1}W", w));
-        }
-        if let Some(w) = self.igpu_power {
-            lines.push(format!("iGPU: {:.1}W", w));
-        }
-        if let Some(w) = self.dgpu_power {
-            lines.push(format!("dGPU: {:.1}W", w));
-        }
+
         match (self.on_ac, self.battery_pct) {
             (Some(true), Some(pct)) => {
                 let mut text = format!("AC / {}%", pct);

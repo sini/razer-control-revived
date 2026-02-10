@@ -1,5 +1,5 @@
 Name:           razercontrol-revived
-Version:        0.2.6
+Version:        0.2.7
 Release:        1%{?dist}
 Summary:        Razer Laptop Control - Revived
 
@@ -43,6 +43,8 @@ install -D -m 755 razer_control_gui/target/release/razer-settings $RPM_BUILD_ROO
 install -D -m 755 razer_control_gui/target/release/razer-cli $RPM_BUILD_ROOT%{_bindir}/razer-cli
 install -D -m 755 razer_control_gui/target/release/daemon $RPM_BUILD_ROOT%{_bindir}/razer-daemon
 install -D -m 644 razer_control_gui/data/gui/razer-settings.desktop $RPM_BUILD_ROOT%{_datadir}/applications/razer-settings.desktop
+install -D -m 644 razer_control_gui/data/gui/icon.png $RPM_BUILD_ROOT%{_datadir}/pixmaps/com.github.encomjp.razercontrol.png
+install -D -m 644 razer_control_gui/data/gui/icon.png $RPM_BUILD_ROOT%{_datadir}/icons/hicolor/512x512/apps/com.github.encomjp.razercontrol.png
 install -D -m 644 razer_control_gui/data/devices/laptops.json $RPM_BUILD_ROOT%{_datadir}/razercontrol/laptops.json
 install -D -m 644 razer_control_gui/data/udev/99-hidraw-permissions.rules $RPM_BUILD_ROOT%{_udevrulesdir}/99-hidraw-permissions.rules
 install -D -m 644 razer_control_gui/data/services/systemd/razercontrol.service $RPM_BUILD_ROOT%{_userunitdir}/razercontrol.service
@@ -52,6 +54,8 @@ install -D -m 644 razer_control_gui/data/services/systemd/razercontrol.service $
 %{_bindir}/razer-cli
 %{_bindir}/razer-daemon
 %{_datadir}/applications/razer-settings.desktop
+%{_datadir}/pixmaps/com.github.encomjp.razercontrol.png
+%{_datadir}/icons/hicolor/512x512/apps/com.github.encomjp.razercontrol.png
 %{_datadir}/razercontrol/laptops.json
 %{_udevrulesdir}/99-hidraw-permissions.rules
 %{_userunitdir}/razercontrol.service

@@ -61,6 +61,8 @@ enum ReadAttr {
     Bho,
     /// Read actual fan RPM from hardware
     FanRpm,
+    /// Read GPU status information
+    Gpu,
 }
 
 #[derive(Subcommand)]
@@ -77,6 +79,10 @@ enum WriteAttr {
     Sync(SyncParams),
     /// Set battery health optimization
     Bho(BhoParams),
+    /// Set dGPU runtime power management
+    RuntimePm(RuntimePmParams),
+    /// Set GPU mode via envycontrol (hybrid, integrated, nvidia)
+    GpuMode(GpuModeParams),
 }
 
 #[derive(Parser)]
@@ -125,6 +131,18 @@ struct BhoParams {
     state: OnOff,
     /// charging threshold
     threshold: Option<u8>,
+}
+
+#[derive(Parser)]
+struct RuntimePmParams {
+    /// on (suspend dGPU) or off (keep active)
+    state: OnOff,
+}
+
+#[derive(Parser)]
+struct GpuModeParams {
+    /// GPU mode: hybrid, integrated, or nvidia
+    mode: String,
 }
 
 #[derive(ValueEnum, Clone)]
@@ -296,6 +314,7 @@ fn main() {
             ReadAttr::Sync => read_sync(),
             ReadAttr::Bho => read_bho(),
             ReadAttr::FanRpm => read_actual_fan_rpm(),
+            ReadAttr::Gpu => read_gpu_status(),
         },
         Args::Write { attr } => match attr {
             WriteAttr::Fan(FanParams { ac_state, speed }) => {
@@ -318,6 +337,12 @@ fn main() {
             }) => write_logo_mode(ac_state.as_index(), logo_state as u8),
             WriteAttr::Bho(BhoParams { state, threshold }) => {
                 validate_and_write_bho(threshold, state)
+            }
+            WriteAttr::RuntimePm(RuntimePmParams { state }) => {
+                write_runtime_pm(state.is_on())
+            }
+            WriteAttr::GpuMode(GpuModeParams { mode }) => {
+                write_gpu_mode(&mode)
             }
         },
         Args::Effect { effect } => match effect {
@@ -732,5 +757,53 @@ fn write_sync(sync: bool) {
     match send_data(comms::DaemonCommand::SetSync { sync }) {
         Some(_) => read_sync(),
         None => eprintln!("Unknown error!"),
+    }
+}
+
+fn read_gpu_status() {
+    match send_data(comms::DaemonCommand::GetGpuStatus) {
+        Some(comms::DaemonResponse::GetGpuStatus { gpus, dgpu_runtime_pm, envycontrol_mode, envycontrol_available }) => {
+            println!("Detected GPUs:");
+            for gpu in &gpus {
+                let type_label = if gpu.gpu_type == "dgpu" { "dGPU" } else { "iGPU" };
+                println!("  {} [{}] {} (driver: {}, status: {})", type_label, gpu.pci_slot, gpu.name, gpu.driver, gpu.runtime_status);
+            }
+            println!("dGPU Runtime PM: {}", if dgpu_runtime_pm { "auto (power saving)" } else { "on (always active)" });
+            if envycontrol_available {
+                println!("envycontrol mode: {}", envycontrol_mode);
+            } else {
+                println!("envycontrol: not installed");
+            }
+        },
+        Some(_) => eprintln!("Daemon responded with invalid data!"),
+        None => eprintln!("Unknown daemon error!"),
+    }
+}
+
+fn write_runtime_pm(enabled: bool) {
+    match send_data(comms::DaemonCommand::SetDgpuRuntimePM { enabled }) {
+        Some(comms::DaemonResponse::SetDgpuRuntimePM { result }) => {
+            if result {
+                println!("dGPU runtime PM set to {}", if enabled { "auto (power saving)" } else { "on (always active)" });
+            } else {
+                eprintln!("Failed to set dGPU runtime PM (permission denied?)");
+            }
+        },
+        Some(_) => eprintln!("Daemon responded with invalid data!"),
+        None => eprintln!("Unknown daemon error!"),
+    }
+}
+
+fn write_gpu_mode(mode: &str) {
+    match send_data(comms::DaemonCommand::SetGpuMode { mode: mode.to_string() }) {
+        Some(comms::DaemonResponse::SetGpuMode { result, message }) => {
+            if result {
+                println!("{}", message);
+            } else {
+                eprintln!("Failed: {}", message);
+            }
+        },
+        Some(_) => eprintln!("Daemon responded with invalid data!"),
+        None => eprintln!("Unknown daemon error!"),
     }
 }
