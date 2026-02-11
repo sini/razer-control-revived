@@ -134,7 +134,10 @@ sudo pacman -S rust cargo dbus libusb hidapi pkgconf systemd gtk4 libadwaita git
 
 Add to your flake inputs:
 ```nix
-inputs.razerdaemon.url = "github:encomjp/razer-control-revived";
+inputs.razerdaemon = {
+  url = "github:encomjp/razer-control-revived";
+  inputs.nixpkgs.follows = "nixpkgs";
+};
 ```
 
 Import the module:
